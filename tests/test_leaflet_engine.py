@@ -102,6 +102,22 @@ def test_pdf_vector_text_parsing():
     assert any("Aardbeien" in t for t in titles)
     assert any(it.promo_price == 3.49 for it in items)
 
+def test_pdf_extract_from_bytes():
+    import io
+    from pypdf import PdfWriter
+    extractor = PDFLeafletExtractor(store_id="aldi")
+
+    # Corrupt / invalid bytes returns [] safely
+    assert extractor.extract_from_pdf_bytes(b"invalid pdf data") == []
+
+    # Valid in-memory PDF
+    writer = PdfWriter()
+    writer.add_blank_page(width=100, height=100)
+    buf = io.BytesIO()
+    writer.write(buf)
+    items = extractor.extract_from_pdf_bytes(buf.getvalue())
+    assert isinstance(items, list)
+
 @pytest.mark.asyncio
 async def test_leaflet_orchestrator_save():
     test_db = f"data/test_{uuid.uuid4().hex[:8]}.db"
