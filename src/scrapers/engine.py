@@ -13,6 +13,7 @@ from src.scrapers.newsletter import NewsletterParser
 from src.scrapers.seed_data import DEMO_PROMOS
 from src.db.repository import Repository
 from src.utils.circuit_breaker import CircuitBreaker, CircuitBreakerOpenException
+from src.scrapers.leaflets.orchestrator import LeafletOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class ScraperEngine:
             s.store_id: CircuitBreaker(name=s.name, failure_threshold=3, recovery_timeout=300.0)
             for s in self.scrapers
         }
+        self.leaflet_orchestrator = LeafletOrchestrator()
         # Some retailers return a shell or a protected page to aiohttp. Keep
         # the fast HTTP adapters, then use one shared Chromium runtime only
         # for sources that produced no usable products.
@@ -102,6 +104,13 @@ class ScraperEngine:
                             except Exception as alert_err:
                                 logger.error(f"Error dispatching promo alert: {alert_err}")
 
+        # Ingest digital brochures and leaflets
+        try:
+            leaflet_new = await self.run_leaflet_scrapers()
+            new_count += leaflet_new
+        except Exception as lf_err:
+            logger.error(f"Error during leaflet ingestion: {lf_err}")
+
         if not self._baseline_complete:
             logger.info(
                 "Initial live scrape established the baseline; %s existing retailer items were not alerted.",
@@ -110,6 +119,25 @@ class ScraperEngine:
             self._baseline_complete = True
         else:
             logger.info(f"Scraping cycle complete. Added {new_count} new promotional deals.")
+        return new_count
+
+    async def run_leaflet_scrapers(self) -> int:
+        """Fetch and persist deals from digital supermarket brochures."""
+        items = await self.leaflet_orchestrator.fetch_all_leaflets()
+        if not items:
+            return 0
+        new_count = 0
+        promo_dicts = [item.to_dict() for item in items]
+        saved = await Repository.save_promos_bulk(promo_dicts)
+        for promo_dict, (promo_id, is_new) in zip(promo_dicts, saved):
+            if is_new:
+                new_count += 1
+                promo_dict["id"] = promo_id
+                if self._baseline_complete and self.on_new_promo_callback:
+                    try:
+                        await self.on_new_promo_callback(promo_dict)
+                    except Exception as alert_err:
+                        logger.error(f"Error dispatching leaflet promo alert: {alert_err}")
         return new_count
 
     async def ingest_newsletter(

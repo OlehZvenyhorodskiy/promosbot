@@ -170,6 +170,28 @@ async def handle_store_view(callback: CallbackQuery):
     await callback.answer()
     await safe_edit_text(callback, title_text, reply_markup=markup, parse_mode="HTML")
 
+@router.callback_query(F.data.startswith("fld:"))
+async def handle_folder_store_deals(callback: CallbackQuery):
+    store_id = callback.data.split(":", 1)[1]
+    user = await Repository.get_user(callback.from_user.id)
+    lang = user.get("language", "en") if user else "en"
+    promos = await Repository.get_promos(store_ids=[store_id], limit=500)
+    leaflet_promos = [p for p in promos if p.get("source_type") == "leaflet" or p.get("leaflet_id")]
+    selected = leaflet_promos or promos
+    await callback.answer()
+    if not selected:
+        await safe_edit_text(callback, get_text("no_promos_found", lang), parse_mode="HTML")
+        return
+    await send_or_edit_promo_message(
+        target=callback,
+        promo=selected[0],
+        current_index=0,
+        total_count=len(selected),
+        lang=lang,
+        nav_code=f"fld:{store_id}",
+        store_id=store_id,
+    )
+
 @router.callback_query(F.data.startswith("new:"))
 async def handle_new_store_promos(callback: CallbackQuery):
     _, batch_id_raw, store_id = callback.data.split(":", 2)
@@ -233,6 +255,13 @@ async def handle_promo_paging(callback: CallbackQuery):
         idx = int(parts[4])
         promos = await Repository.get_alert_batch_promos(batch_id, store_id)
         nav_code = f"new:{batch_id}:{store_id}"
+    elif mode == "fld":
+        store_id = parts[2]
+        idx = int(parts[3])
+        all_promos = await Repository.get_promos(store_ids=[store_id], limit=500)
+        leaflet_promos = [p for p in all_promos if p.get("source_type") == "leaflet" or p.get("leaflet_id")]
+        promos = leaflet_promos or all_promos
+        nav_code = f"fld:{store_id}"
     else:
         await callback.answer()
         return

@@ -48,6 +48,9 @@ CREATE TABLE IF NOT EXISTS promos (
     category_id TEXT,
     valid_from TEXT,
     valid_until TEXT,
+    source_type TEXT DEFAULT 'web',
+    leaflet_id TEXT,
+    page_number INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -55,6 +58,7 @@ CREATE TABLE IF NOT EXISTS promos (
 CREATE INDEX IF NOT EXISTS idx_promos_store ON promos(store_id);
 CREATE INDEX IF NOT EXISTS idx_promos_category ON promos(category_id);
 CREATE INDEX IF NOT EXISTS idx_promos_valid ON promos(valid_until);
+CREATE INDEX IF NOT EXISTS idx_promos_source ON promos(source_type);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_promos_fingerprint ON promos(fingerprint);
 
 CREATE TABLE IF NOT EXISTS user_favorites (
@@ -114,11 +118,17 @@ async def init_db():
                 "ALTER TABLE users ADD COLUMN language_selected INTEGER NOT NULL DEFAULT 1"
             )
 
-        # Migration: Ensure promos table has the fingerprint column and unique index
+        # Migration: Ensure promos table has the fingerprint and leaflet columns
         async with conn.execute("PRAGMA table_info(promos)") as cursor:
             promo_columns = {row[1] for row in await cursor.fetchall()}
         if "fingerprint" not in promo_columns:
             await conn.execute("ALTER TABLE promos ADD COLUMN fingerprint TEXT")
+        if "source_type" not in promo_columns:
+            await conn.execute("ALTER TABLE promos ADD COLUMN source_type TEXT DEFAULT 'web'")
+        if "leaflet_id" not in promo_columns:
+            await conn.execute("ALTER TABLE promos ADD COLUMN leaflet_id TEXT")
+        if "page_number" not in promo_columns:
+            await conn.execute("ALTER TABLE promos ADD COLUMN page_number INTEGER")
         await conn.execute(
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_promos_fingerprint ON promos(fingerprint)"
         )
