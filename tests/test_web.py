@@ -79,6 +79,25 @@ async def test_web_server(aiohttp_client):
             headers={"Authorization": "Bearer supersecret123"},
         )
         assert resp_auth.status == 200
+
+        # Test scraper health endpoint
+        resp_health = await client.get(
+            "/api/v1/health/scrapers",
+            headers={"Authorization": "Bearer supersecret123"},
+        )
+        assert resp_health.status == 200
+        health_data = await resp_health.json()
+        assert health_data["status"] == "ok"
+        assert health_data["total_stores"] >= 10
+
+        # Test trigger endpoint
+        resp_trigger = await client.post(
+            "/api/v1/scrape/trigger?store=colruyt",
+            headers={"Authorization": "Bearer supersecret123"},
+        )
+        assert resp_trigger.status == 200
+        trigger_data = await resp_trigger.json()
+        assert trigger_data["success"] is True
     finally:
         settings.API_SECRET = ""
         if os.path.exists(db_file):

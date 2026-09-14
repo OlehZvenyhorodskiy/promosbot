@@ -169,3 +169,42 @@ class ScraperEngine:
                 except Exception as alert_err:
                     logger.error(f"Error dispatching newsletter promo alert: {alert_err}")
         return saved_items
+
+    def get_health_status(self) -> List[Dict[str, Any]]:
+        statuses = []
+        for s in self.scrapers:
+            cb = self.circuit_breakers.get(s.store_id)
+            statuses.append({
+                "store_id": s.store_id,
+                "name": s.name,
+                "circuit_breaker_state": cb.state if cb else "CLOSED",
+                "failure_count": cb.failure_count if cb else 0,
+            })
+        return statuses
+
+    async def run_store_scraper(self, store_id: str) -> int:
+        target_scraper = next((s for s in self.scrapers if s.store_id == store_id), None)
+        if not target_scraper:
+            logger.warning(f"Store scraper {store_id} not found.")
+            return 0
+
+        cb = self.circuit_breakers.get(store_id)
+        try:
+            if cb:
+                items = await cb.call(target_scraper.fetch_promos)
+            else:
+                items = await target_scraper.fetch_promos()
+
+            if not items and store_id in self.browser_fallbacks:
+                fallback = self.browser_fallbacks[store_id]
+                items = await fallback.fetch_promos()
+
+            promo_dicts = [it.to_dict() for it in items]
+            saved = await Repository.save_promos_bulk(promo_dicts)
+            new_count = sum(1 for _, is_new in saved if is_new)
+            logger.info(f"Scraper for {store_id} fetched {len(items)} items ({new_count} new).")
+            return new_count
+        except Exception as e:
+            logger.error(f"Error executing scraper for {store_id}: {e}")
+            return 0
+
