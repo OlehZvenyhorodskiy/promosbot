@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
 from src.core.constants import SUPERMARKETS, CATEGORIES
-from src.i18n.translations import get_text, get_category_name
+from src.i18n.translations import get_text, get_category_name, localize_discount_text
 
 def format_price(val: Optional[float]) -> str:
     if val is None:
@@ -38,7 +38,8 @@ def format_promo_card(promo: Dict[str, Any], lang: str = "en", is_fav: bool = Fa
     lines.append(f"🏷️ <b>{title}</b>")
 
     if description:
-        clean_desc = description[:180] + ("..." if len(description) > 180 else "")
+        localized_desc = localize_discount_text(description, lang)
+        clean_desc = localized_desc[:180] + ("..." if len(localized_desc) > 180 else "")
         lines.append(f"<i>{clean_desc}</i>")
 
     lines.append("")
@@ -57,11 +58,8 @@ def format_promo_card(promo: Dict[str, Any], lang: str = "en", is_fav: bool = Fa
     if price_parts:
         lines.append(f"💰 {' '.join(price_parts)}")
 
-    # Format discount badge intelligently to eliminate vague 'Акція PROMO'
-    clean_discount = (discount_text or "").replace("\ufffd", "€").strip()
-    if clean_discount.startswith("?"):
-        clean_discount = "€" + clean_discount[1:]
-
+    # Format and translate discount badge intelligently to eliminate vague 'Акція PROMO'
+    clean_discount = localize_discount_text(discount_text, lang)
     is_generic_promo = clean_discount.upper() in ["", "PROMO", "ACTIE", "PROMOTIE", "DISCOUNT"]
 
     if orig_price is not None and promo_price is not None and orig_price > promo_price:

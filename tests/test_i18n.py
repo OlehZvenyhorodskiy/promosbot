@@ -26,3 +26,30 @@ def test_categories_localized():
         name_nl = get_category_name(cat_id, "nl")
         name_fr = get_category_name(cat_id, "fr")
         assert name_en and name_uk and name_nl and name_fr
+
+def test_localize_discount_text():
+    from src.i18n.translations import localize_discount_text
+    from src.bot.formatters import format_promo_card
+
+    # Ukrainian translations of Belgian promotions
+    assert localize_discount_text("3e gratis", "uk") == "3-й безкоштовно"
+    assert localize_discount_text("1+1 gratis", "uk") == "1+1 безкоштовно"
+    assert localize_discount_text("gratis levering", "uk") == "Безкоштовна доставка"
+    assert localize_discount_text("2de aan -50%", "uk") == "2-й зі знижкою -50%"
+    assert localize_discount_text("Rode Prijzen", "uk") == "Червоні ціни (гарантія кращої ціни)"
+
+    # English translations
+    assert localize_discount_text("3e gratis", "en") == "3th free"
+    assert localize_discount_text("1+1 gratis", "en") == "1+1 free"
+    assert localize_discount_text("gratis bezorging", "en") == "Free delivery"
+
+    # Card formatting check
+    card = format_promo_card({
+        "store_id": "colruyt",
+        "title": "Stella Artois",
+        "description": "Gratis bezorging bij besteding",
+        "discount_text": "3e gratis",
+        "promo_price": 10.0,
+    }, lang="uk")
+    assert "3-й безкоштовно" in card
+    assert "Безкоштовна доставка" in card

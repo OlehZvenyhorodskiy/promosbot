@@ -355,3 +355,91 @@ def get_category_name(category_id: str, lang: str = DEFAULT_LANGUAGE) -> str:
         return category_id
     names = cat.get("names", {})
     return names.get(lang, names.get(DEFAULT_LANGUAGE, category_id))
+
+
+import re
+
+DISCOUNT_TRANSLATION_RULES = {
+    "uk": [
+        (r"(?i)\bgratis\s*(?:thuisbezorgd|levering|bezorging|verzending)\b", "Безкоштовна доставка"),
+        (r"(?i)\blivraison\s*gratuite\b", "Безкоштовна доставка"),
+        (r"(?i)\b(\d+)\s*\+\s*(\d+)\s*(?:gratis|gratuit(?:e?s?)?)\b", r"\1+\2 безкоштовно"),
+        (r"(?i)\b(\d+)\s*(?:e|de|ste)\s*gratis\b", r"\1-й безкоштовно"),
+        (r"(?i)\b(\d+)\s*(?:er|ème|eme)\s*gratuit(?:e?s?)?\b", r"\1-й безкоштовно"),
+        (r"(?i)\b(\d+)\s*(?:e|de|ste)\s*aan\s*-?(\d+)%", r"\1-й зі знижкою -\2%"),
+        (r"(?i)\b(\d+)\s*(?:er|ème|eme)\s*à\s*-?(\d+)%", r"\1-й зі знижкою -\2%"),
+        (r"(?i)\b2de\s*voor\s*halve\s*prijs\b", "2-й за пів ціни (-50%)"),
+        (r"(?i)\b2ème\s*à\s*moitié\s*prix\b", "2-й за пів ціни (-50%)"),
+        (r"(?i)\b1\s*gekocht\s*=\s*1\s*gratis\b", "1 купуєш = 1 безкоштовно"),
+        (r"(?i)\b1\s*acheté\s*=\s*1\s*offert\b", "1 купуєш = 1 безкоштовно"),
+        (r"(?i)\b-(\d+)%\s*(?:korting|réduction|reduction)\b", r"Знижка -\1%"),
+        (r"(?i)\b(?:korting|réduction|reduction)\s*-?(\d+)%", r"Знижка -\1%"),
+        (r"(?i)\brode\s*prijzen\b", "Червоні ціни (гарантія кращої ціни)"),
+        (r"(?i)\bprix\s*rouges\b", "Червоні ціни (гарантія кращої ціни)"),
+        (r"(?i)\bronde\s*prijzen\b", "Круглі ціни"),
+        (r"(?i)\bprix\s*ronds\b", "Круглі ціни"),
+        (r"(?i)\bweekactie\b", "Акція тижня"),
+        (r"(?i)\baction\s*de\s*la\s*semaine\b", "Акція тижня"),
+        (r"(?i)\bbonus\s*actie\b", "Бонусна акція"),
+        (r"(?i)\bclubkorting\b", "Знижка клубу"),
+        (r"(?i)\bop\s*=\s*op\b", "Кількість обмежена"),
+        (r"(?i)\bjusqu['’]à\s*épuisement\b", "Кількість обмежена"),
+        (r"(?i)\bcombideal\b", "Комбо-знижка"),
+        (r"(?i)\bop\s*alle\b", "на всі"),
+        (r"(?i)\bsur\s*tous?\b", "на всі"),
+    ],
+    "en": [
+        (r"(?i)\bgratis\s*(?:thuisbezorgd|levering|bezorging|verzending)\b", "Free delivery"),
+        (r"(?i)\blivraison\s*gratuite\b", "Free delivery"),
+        (r"(?i)\b(\d+)\s*\+\s*(\d+)\s*(?:gratis|gratuit(?:e?s?)?)\b", r"\1+\2 free"),
+        (r"(?i)\b(\d+)\s*(?:e|de|ste)\s*gratis\b", r"\1th free"),
+        (r"(?i)\b(\d+)\s*(?:er|ème|eme)\s*gratuit(?:e?s?)?\b", r"\1th free"),
+        (r"(?i)\b(\d+)\s*(?:e|de|ste)\s*aan\s*-?(\d+)%", r"\1th at -\2%"),
+        (r"(?i)\b(\d+)\s*(?:er|ème|eme)\s*à\s*-?(\d+)%", r"\1th at -\2%"),
+        (r"(?i)\b2de\s*voor\s*halve\s*prijs\b", "2nd at half price (-50%)"),
+        (r"(?i)\b2ème\s*à\s*moitié\s*prix\b", "2nd at half price (-50%)"),
+        (r"(?i)\b1\s*gekocht\s*=\s*1\s*gratis\b", "Buy 1 get 1 free"),
+        (r"(?i)\b1\s*acheté\s*=\s*1\s*offert\b", "Buy 1 get 1 free"),
+        (r"(?i)\b-(\d+)%\s*(?:korting|réduction|reduction)\b", r"-\1% discount"),
+        (r"(?i)\b(?:korting|réduction|reduction)\s*-?(\d+)%", r"-\1% discount"),
+        (r"(?i)\brode\s*prijzen\b", "Red Prices (Lowest Price Guarantee)"),
+        (r"(?i)\bprix\s*rouges\b", "Red Prices (Lowest Price Guarantee)"),
+        (r"(?i)\bronde\s*prijzen\b", "Round prices"),
+        (r"(?i)\bprix\s*ronds\b", "Round prices"),
+        (r"(?i)\bweekactie\b", "Deal of the week"),
+        (r"(?i)\baction\s*de\s*la\s*semaine\b", "Deal of the week"),
+        (r"(?i)\bbonus\s*actie\b", "Bonus deal"),
+        (r"(?i)\bclubkorting\b", "Club discount"),
+        (r"(?i)\bop\s*=\s*op\b", "While stocks last"),
+        (r"(?i)\bjusqu['’]à\s*épuisement\b", "While stocks last"),
+        (r"(?i)\bcombideal\b", "Combo deal"),
+        (r"(?i)\bop\s*alle\b", "on all"),
+        (r"(?i)\bsur\s*tous?\b", "on all"),
+    ],
+    "fr": [
+        (r"(?i)\bgratis\s*(?:thuisbezorgd|levering|bezorging|verzending)\b", "Livraison gratuite"),
+        (r"(?i)\b(\d+)\s*\+\s*(\d+)\s*gratis\b", r"\1+\2 gratuit"),
+        (r"(?i)\b(\d+)\s*(?:e|de|ste)\s*gratis\b", r"\1ème gratuit"),
+        (r"(?i)\b(\d+)\s*(?:e|de|ste)\s*aan\s*-?(\d+)%", r"\1ème à -\2%"),
+        (r"(?i)\b2de\s*voor\s*halve\s*prijs\b", "2ème à moitié prix (-50%)"),
+        (r"(?i)\b1\s*gekocht\s*=\s*1\s*gratis\b", "1 acheté = 1 gratuit"),
+        (r"(?i)\b-(\d+)%\s*korting\b", r"-\1% de réduction"),
+        (r"(?i)\bkorting\s*-?(\d+)%", r"-\1% de réduction"),
+        (r"(?i)\brode\s*prijzen\b", "Prix Rouges"),
+        (r"(?i)\bweekactie\b", "Offre de la semaine"),
+        (r"(?i)\bbonus\s*actie\b", "Action Bonus"),
+        (r"(?i)\bop\s*=\s*op\b", "Jusqu'à épuisement des stocks"),
+    ],
+}
+
+def localize_discount_text(text: str | None, lang: str = DEFAULT_LANGUAGE) -> str:
+    if not text:
+        return ""
+    result = text.replace("\ufffd", "€").strip()
+    if result.startswith("?"):
+        result = "€" + result[1:]
+
+    rules = DISCOUNT_TRANSLATION_RULES.get(lang, [])
+    for pattern, repl in rules:
+        result = re.sub(pattern, repl, result)
+    return result
