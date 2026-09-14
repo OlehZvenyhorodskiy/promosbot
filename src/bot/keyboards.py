@@ -23,10 +23,11 @@ def get_main_reply_keyboard(lang: str = "en") -> ReplyKeyboardMarkup:
             KeyboardButton(text=get_text("menu_favorites", lang)),
         ],
         [
+            KeyboardButton(text=get_text("menu_cart", lang)),
             KeyboardButton(text=get_text("menu_settings", lang)),
-            KeyboardButton(text=get_text("menu_test", lang)),
         ],
         [
+            KeyboardButton(text=get_text("menu_test", lang)),
             KeyboardButton(text=get_text("menu_help", lang)),
         ],
     ]
@@ -59,8 +60,9 @@ def get_main_hub_keyboard(lang: str = "en") -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text=get_text("menu_folders", lang), callback_data="nav:folders")],
         [
             InlineKeyboardButton(text=get_text("menu_favorites", lang), callback_data="nav:favs"),
-            InlineKeyboardButton(text=get_text("menu_settings", lang), callback_data="nav:settings"),
+            InlineKeyboardButton(text=get_text("menu_cart", lang), callback_data="nav:cart"),
         ],
+        [InlineKeyboardButton(text=get_text("menu_settings", lang), callback_data="nav:settings")],
     ]
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -262,6 +264,7 @@ def get_promo_card_keyboard(
     promo_id: str,
     deal_url: Optional[str] = None,
     is_fav: bool = False,
+    is_in_cart: bool = False,
     current_index: int = 0,
     total_count: int = 1,
     lang: str = "en",
@@ -283,11 +286,20 @@ def get_promo_card_keyboard(
     if action_row:
         rows.append(action_row)
 
-    # 2. Compact bookmark button (safe under 25 bytes)
+    # 2. Compact bookmark & cart action row
     fav_text = get_text("btn_remove_fav" if is_fav else "btn_save_fav", lang)
-    rows.append([InlineKeyboardButton(text=fav_text, callback_data=f"fav:{promo_id}")])
+    cart_text = get_text("btn_remove_cart" if is_in_cart else "btn_add_cart", lang)
+    rows.append([
+        InlineKeyboardButton(text=fav_text, callback_data=f"fav:{promo_id}"),
+        InlineKeyboardButton(text=cart_text, callback_data=f"cart:{promo_id}"),
+    ])
 
-    # 3. Compact navigation buttons (prev / count / next)
+    # 3. Smart Price Comparison button
+    rows.append([
+        InlineKeyboardButton(text=get_text("btn_compare_price", lang), callback_data=f"cmp:{promo_id}")
+    ])
+
+    # 4. Compact navigation buttons (prev / count / next)
     if total_count > 1:
         prev_idx = (current_index - 1) % total_count
         next_idx = (current_index + 1) % total_count
@@ -297,7 +309,7 @@ def get_promo_card_keyboard(
             InlineKeyboardButton(text=get_text("btn_next", lang), callback_data=f"p:{effective_nav}:{next_idx}"),
         ])
 
-    # 4. Contextual back button -> directly to store categories or store list!
+    # 5. Contextual back button -> directly to store categories or store list!
     if store_id:
         rows.append([
             InlineKeyboardButton(text=get_text("btn_back_categories", lang), callback_data=f"st:{store_id}"),
@@ -309,3 +321,23 @@ def get_promo_card_keyboard(
         ])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+def get_cart_keyboard(cart_items: List[Dict[str, Any]], lang: str = "en") -> InlineKeyboardMarkup:
+    rows = []
+    for item in cart_items[:10]:
+        title = item.get("title", "Product")[:26]
+        p_id = item.get("id")
+        price = item.get("promo_price") or item.get("original_price")
+        price_str = f" (€{price:.2f})" if price else ""
+        rows.append([
+            InlineKeyboardButton(text=f"❌ {title}{price_str}", callback_data=f"crm:{p_id}")
+        ])
+    if cart_items:
+        rows.append([
+            InlineKeyboardButton(text=get_text("cart_clear_btn", lang), callback_data="cart:clear")
+        ])
+    rows.append([
+        InlineKeyboardButton(text=get_text("btn_back_stores", lang), callback_data="nav:browse_stores"),
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
