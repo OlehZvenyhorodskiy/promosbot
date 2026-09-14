@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 import aiohttp
 from bs4 import BeautifulSoup
 
-from src.scrapers.base import BaseScraper, infer_category
+from src.scrapers.base import BaseScraper, infer_category, generate_fingerprint
 from src.scrapers.models import PromoItem
 from src.scrapers.generic import GenericRetailerScraper, parse_price, prices_from_text
 
@@ -22,6 +22,10 @@ class LidlScraper(BaseScraper):
         self._generic = GenericRetailerScraper("lidl", "Lidl", url, ssl_verify=False)
 
     async def fetch_promos(self) -> List[PromoItem]:
+        """
+        Fetches promotions from Lidl with max_field_size=65536 to prevent
+        Akamai header size overflow errors, with leaflet fallback.
+        """
         headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -29,25 +33,48 @@ class LidlScraper(BaseScraper):
             ),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "nl-BE,nl;q=0.9,fr-BE;q=0.8,en;q=0.7",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
         }
         try:
-            connector = aiohttp.TCPConnector(ssl=False)
-            async with aiohttp.ClientSession(connector=connector, headers=headers) as session:
-                async with session.get(self.url, timeout=aiohttp.ClientTimeout(total=20)) as resp:
+            connector = aiohttp.TCPConnector(ssl=False, limit=10, limit_per_host=5)
+            async with aiohttp.ClientSession(
+                connector=connector,
+                headers=headers,
+                max_field_size=65536,
+                max_line_size=65536,
+            ) as session:
+                async with session.get(
+                    self.url,
+                    timeout=aiohttp.ClientTimeout(total=30),
+                    allow_redirects=True,
+                ) as resp:
                     if resp.status >= 400:
-                        logger.warning(f"Lidl scraper returned HTTP {resp.status}")
-                        return []
+                        logger.warning(f"Lidl scraper returned HTTP {resp.status}, trying leaflet fallback")
+                        return await self._fetch_from_leaflets()
                     html = await resp.text(errors="ignore")
-                    return self.parse_html(html)
+                    items = self.parse_html(html)
+                    if not items or len(items) < 5:
+                        leaflet_items = await self._fetch_from_leaflets()
+                        items.extend(leaflet_items)
+                    return items
         except Exception as err:
-            logger.error(f"Error scraping Lidl: {err}")
-            return []
+            logger.error(f"Error scraping Lidl: {err}, falling back to leaflets")
+            return await self._fetch_from_leaflets()
 
     def parse_html(self, html: str) -> List[PromoItem]:
         items = self._generic.parse_html(html)
         enhanced: List[PromoItem] = []
         for item in items:
             item.loyalty_card = "Lidl Plus"
+            item.fingerprint = generate_fingerprint(
+                store_id="lidl",
+                title=item.title,
+                promo_price=item.promo_price,
+                valid_from=item.valid_from,
+                valid_until=item.valid_until,
+            )
             enhanced.append(item)
 
         if enhanced:
@@ -81,9 +108,16 @@ class LidlScraper(BaseScraper):
             img_elem = card.select_one("img")
             img_url = urljoin(self.url, img_elem.get("src")) if img_elem and img_elem.get("src") else None
 
+            fp = generate_fingerprint(
+                store_id="lidl",
+                title=title,
+                promo_price=promo_price,
+            )
+
             item = PromoItem(
                 store_id="lidl",
-                external_id=self.stable_external_id("lidl", title, deal_url or title),
+                external_id=f"lidl_{fp[:8]}",
+                fingerprint=fp,
                 title=title[:240],
                 description="Lidl actie",
                 original_price=orig_price,
@@ -93,7 +127,27 @@ class LidlScraper(BaseScraper):
                 deal_url=deal_url,
                 category_id=infer_category(title, disc_text),
                 loyalty_card="Lidl Plus",
+                source_type="html",
             )
             enhanced.append(item)
 
         return enhanced
+
+    async def _fetch_from_leaflets(self) -> List[PromoItem]:
+        """Fallback to extract promotions from Lidl digital brochures."""
+        try:
+            from src.scrapers.leaflets.publitas import PublitasLeafletExtractor
+            extractor = PublitasLeafletExtractor("lidl", "lidl-belgie")
+            pubs = await extractor.get_active_publications()
+            items = []
+            for pub in pubs[:3]:
+                slug = pub.get("slug") or str(pub.get("id", ""))
+                if slug:
+                    extracted = await extractor.extract_from_publication_slug(slug)
+                    items.extend(extracted)
+            if items:
+                logger.info(f"Lidl leaflets extracted {len(items)} items")
+            return items
+        except Exception as err:
+            logger.debug(f"Lidl leaflet fallback failed: {err}")
+            return []

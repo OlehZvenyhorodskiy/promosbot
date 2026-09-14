@@ -1,4 +1,4 @@
-"""Scraper for Action Belgium weekly deals (Weekactie)."""
+"""Scraper for Action Belgium weekly deals (Weekactie) and Action Club discounts."""
 
 import json
 import logging
@@ -8,7 +8,7 @@ from urllib.parse import urljoin
 import aiohttp
 from bs4 import BeautifulSoup
 
-from src.scrapers.base import BaseScraper, infer_category
+from src.scrapers.base import BaseScraper, infer_category, generate_fingerprint
 from src.scrapers.models import PromoItem
 from src.scrapers.generic import parse_price, prices_from_text
 
@@ -21,8 +21,53 @@ class ActionScraper(BaseScraper):
     def __init__(self, url: str = ACTION_WEEKACTIE_URL):
         super().__init__(store_id="action", name="Action")
         self.url = url
+        self.loyalty_card = "Action Club"
 
     async def fetch_promos(self) -> List[PromoItem]:
+        items: List[PromoItem] = []
+
+        # 1. HTML and Next.js parsing
+        try:
+            html_items = await self._fetch_from_html()
+            if html_items:
+                items.extend(html_items)
+                logger.info(f"Action HTML fetched {len(html_items)} items")
+        except Exception as err:
+            logger.debug(f"Action HTML fetch error: {err}")
+
+        # 2. Leaflet fallback
+        if len(items) < 10:
+            try:
+                leaflet_items = await self._fetch_from_leaflets()
+                if leaflet_items:
+                    items.extend(leaflet_items)
+                    logger.info(f"Action leaflets fetched {len(leaflet_items)} items")
+            except Exception as err:
+                logger.debug(f"Action leaflet fetch error: {err}")
+
+        # 3. Tiendeo aggregator fallback
+        if len(items) < 10:
+            try:
+                tiendeo_items = await self._fetch_from_tiendeo()
+                if tiendeo_items:
+                    items.extend(tiendeo_items)
+                    logger.info(f"Action Tiendeo fetched {len(tiendeo_items)} items")
+            except Exception as err:
+                logger.debug(f"Action Tiendeo fetch error: {err}")
+
+        # Deduplication by fingerprint
+        seen = set()
+        unique_items = []
+        for item in items:
+            if item.fingerprint and item.fingerprint not in seen:
+                seen.add(item.fingerprint)
+                unique_items.append(item)
+            elif not item.fingerprint:
+                unique_items.append(item)
+
+        return unique_items
+
+    async def _fetch_from_html(self) -> List[PromoItem]:
         headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -31,18 +76,13 @@ class ActionScraper(BaseScraper):
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "nl-BE,nl;q=0.9,fr-BE;q=0.8,en;q=0.7",
         }
-        try:
-            connector = aiohttp.TCPConnector(ssl=False)
-            async with aiohttp.ClientSession(connector=connector, headers=headers) as session:
-                async with session.get(self.url, timeout=aiohttp.ClientTimeout(total=20)) as resp:
-                    if resp.status >= 400:
-                        logger.warning(f"Action scraper returned HTTP {resp.status}")
-                        return []
-                    html = await resp.text(errors="ignore")
-                    return self.parse_html(html)
-        except Exception as err:
-            logger.error(f"Error scraping Action: {err}")
-            return []
+        connector = aiohttp.TCPConnector(ssl=False)
+        async with aiohttp.ClientSession(connector=connector, headers=headers) as session:
+            async with session.get(self.url, timeout=aiohttp.ClientTimeout(total=20)) as resp:
+                if resp.status >= 400:
+                    return []
+                html = await resp.text(errors="ignore")
+                return self.parse_html(html)
 
     def parse_html(self, html: str) -> List[PromoItem]:
         items: List[PromoItem] = []
@@ -60,11 +100,7 @@ class ActionScraper(BaseScraper):
                 logger.debug(f"Action __NEXT_DATA__ parsing error: {e}")
 
         # 2. Try HTML product cards
-        # Action cards typically have class containing product-card or data-testid
-        cards = soup.select("[class*='product-card'], [class*='ProductCard'], .action-product")
-        if not cards:
-            cards = soup.select("article, .card")
-
+        cards = soup.select("[class*='product-card'], [class*='ProductCard'], .action-product, article, .card")
         for card in cards:
             title_elem = card.select_one("h3, h2, [class*='title'], [class*='heading']")
             if not title_elem:
@@ -73,11 +109,9 @@ class ActionScraper(BaseScraper):
             if len(title) < 3 or title.lower() in ("action", "weekactie", "aanbiedingen"):
                 continue
 
-            # Prices
             promo_price: Optional[float] = None
             orig_price: Optional[float] = None
 
-            # Look for price elements
             current_elem = card.select_one("[class*='current'], [class*='promo'], [class*='price-wrapper'], .price")
             if current_elem:
                 promo_price = parse_price(current_elem.get_text())
@@ -97,7 +131,6 @@ class ActionScraper(BaseScraper):
             if promo_price is None and orig_price is None:
                 continue
 
-            # Image
             img_elem = card.select_one("img")
             img_url = None
             if img_elem:
@@ -105,19 +138,24 @@ class ActionScraper(BaseScraper):
                 if img_url:
                     img_url = urljoin(self.url, img_url)
 
-            # Deal link
             link_elem = card.find("a")
             deal_url = None
             if link_elem and link_elem.get("href"):
                 deal_url = urljoin(self.url, link_elem.get("href"))
 
-            # Discount text
             discount_badge = card.select_one("[class*='badge'], [class*='discount'], [class*='label']")
             disc_text = discount_badge.get_text(strip=True) if discount_badge else "Weekactie"
 
+            fp = generate_fingerprint(
+                store_id="action",
+                title=title,
+                promo_price=promo_price,
+            )
+
             item = PromoItem(
                 store_id="action",
-                external_id=self.stable_external_id("action", title, deal_url or title),
+                external_id=f"action_{fp[:8]}",
+                fingerprint=fp,
                 title=title[:240],
                 description="Action Weekactie aanbieding",
                 original_price=orig_price,
@@ -127,6 +165,7 @@ class ActionScraper(BaseScraper):
                 deal_url=deal_url,
                 category_id=infer_category(title, "action weekactie"),
                 loyalty_card="Action Club",
+                source_type="html",
             )
             items.append(item)
 
@@ -137,7 +176,6 @@ class ActionScraper(BaseScraper):
 
         def walk(val):
             if isinstance(val, dict):
-                # Check if this object looks like an Action product
                 title = val.get("title") or val.get("name") or val.get("webTitle")
                 price = val.get("price") or val.get("promoPrice") or val.get("currentPrice")
                 if title and price and isinstance(title, str) and len(title) > 3:
@@ -149,10 +187,16 @@ class ActionScraper(BaseScraper):
                         img = val.get("image") or val.get("imageUrl") or val.get("assetUrl")
                         full_img = urljoin(self.url, img) if img and isinstance(img, str) else None
 
+                        fp = generate_fingerprint(
+                            store_id="action",
+                            title=title,
+                            promo_price=parsed_promo,
+                        )
                         items.append(
                             PromoItem(
                                 store_id="action",
-                                external_id=self.stable_external_id("action", title, str(val.get("id") or title)),
+                                external_id=f"action_{fp[:8]}",
+                                fingerprint=fp,
                                 title=title[:240],
                                 description=str(val.get("description") or "Action Weekactie")[:500],
                                 original_price=orig,
@@ -162,6 +206,7 @@ class ActionScraper(BaseScraper):
                                 deal_url=full_url,
                                 category_id=infer_category(title, str(val.get("category", ""))),
                                 loyalty_card="Action Club",
+                                source_type="next_data",
                             )
                         )
                 for v in val.values():
@@ -172,3 +217,28 @@ class ActionScraper(BaseScraper):
 
         walk(data)
         return items
+
+    async def _fetch_from_leaflets(self) -> List[PromoItem]:
+        try:
+            from src.scrapers.leaflets.publitas import PublitasLeafletExtractor
+            extractor = PublitasLeafletExtractor("action", "action-belgie")
+            pubs = await extractor.get_active_publications()
+            items = []
+            for pub in pubs[:3]:
+                slug = pub.get("slug") or str(pub.get("id", ""))
+                if slug:
+                    extracted = await extractor.extract_from_publication_slug(slug)
+                    items.extend(extracted)
+            return items
+        except Exception as err:
+            logger.debug(f"Action leaflet fallback failed: {err}")
+            return []
+
+    async def _fetch_from_tiendeo(self) -> List[PromoItem]:
+        try:
+            from src.scrapers.leaflets.tiendeo import TiendeoAggregator
+            aggregator = TiendeoAggregator()
+            return await aggregator.fetch_retailer_deals("action")
+        except Exception as err:
+            logger.debug(f"Action Tiendeo fallback failed: {err}")
+            return []

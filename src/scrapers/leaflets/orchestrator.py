@@ -22,6 +22,11 @@ class LeafletOrchestrator:
             "colruyt": PublitasLeafletExtractor("colruyt", "colruyt"),
             "kruidvat": PublitasLeafletExtractor("kruidvat", "kruidvat-belgie"),
             "okay": PublitasLeafletExtractor("okay", "okay"),
+            "delhaize": PublitasLeafletExtractor("delhaize", "delhaize-belgie"),
+            "carrefour": PublitasLeafletExtractor("carrefour", "carrefour-belgie"),
+            "action": PublitasLeafletExtractor("action", "action-belgie"),
+            "lidl": PublitasLeafletExtractor("lidl", "lidl-belgie"),
+            "bioplanet": PublitasLeafletExtractor("bioplanet", "bio-planet"),
         }
         self.tiendeo = TiendeoAggregator()
         self.pdf_extractor = PDFLeafletExtractor()
