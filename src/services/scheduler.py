@@ -1,8 +1,11 @@
 import asyncio
 import logging
-from datetime import datetime
-from typing import Dict, Any, List
+from datetime import datetime, timezone
+from typing import Any, Awaitable, Callable, Dict, List
+from zoneinfo import ZoneInfo
+
 from aiogram import Bot
+from aiogram.exceptions import TelegramRetryAfter
 from src.core.config import settings
 from src.db.repository import Repository
 from src.bot.formatters import format_promo_card, format_digest_header
@@ -12,6 +15,53 @@ from src.core.constants import SUPERMARKETS
 from src.scrapers.engine import ScraperEngine
 
 logger = logging.getLogger(__name__)
+
+BRUSSELS_TZ = ZoneInfo("Europe/Brussels")
+
+# Small interleaving pause between messages to different users so batch sends
+# stay well under Telegram's global rate limits.
+_SEND_INTERLEAVE_DELAY_SECONDS = 0.05
+# Cap absurd retry_after values so a misbehaving Telegram response can never
+# stall a batch dispatch for minutes on end.
+_MAX_RETRY_AFTER_SECONDS = 60
+
+
+async def _send_telegram_with_retry(send: Callable[[], Awaitable[Any]]) -> bool:
+    """Send one Telegram call, spacing it out and retrying once on flood control.
+
+    Returns ``True`` when the message was delivered (either on the first attempt
+    or after a single :class:`TelegramRetryAfter` back-off). It returns ``False``
+    only when the single retry also failed, so callers can skip that delivery
+    without aborting the rest of the batch. Other exceptions are left to the
+    caller so each user can be handled in isolation.
+    """
+    await asyncio.sleep(_SEND_INTERLEAVE_DELAY_SECONDS)
+    try:
+        await send()
+        return True
+    except TelegramRetryAfter as exc:
+        delay = min(exc.retry_after, _MAX_RETRY_AFTER_SECONDS)
+        await asyncio.sleep(delay)
+        try:
+            await send()
+            return True
+        except Exception as retry_exc:
+            logger.warning("Skipping Telegram delivery after retry: %s", retry_exc)
+            return False
+
+
+def _current_brussels_hour(now: datetime | None = None) -> int:
+    """Return the current hour in Europe/Brussels.
+
+    ``now`` must be timezone-aware for deterministic results; naive datetimes
+    are interpreted as UTC. When omitted, the live Brussels time is used.
+    """
+    if now is None:
+        now = datetime.now(BRUSSELS_TZ)
+    elif now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    return now.astimezone(BRUSSELS_TZ).hour
+
 
 class NotificationDispatcher:
     def __init__(self, bot: Bot):
@@ -48,8 +98,8 @@ class NotificationDispatcher:
 
         batch_id = await Repository.create_alert_batch(pending)
         delivered = 0
-        try:
-            for user, eligible in eligible_by_user:
+        for user, eligible in eligible_by_user:
+            try:
                 store_counts: Dict[str, int] = {}
                 for promo in eligible:
                     store_id = promo.get("store_id", "generic")
@@ -61,16 +111,18 @@ class NotificationDispatcher:
                 lang = user.get("language", "en")
                 text = get_text("new_promos_summary", lang, total=len(eligible))
                 text = f"{text}\n\n<code>{labels}</code>"
-                await self.bot.send_message(
-                    chat_id=user["user_id"],
-                    text=text,
-                    reply_markup=get_new_promos_keyboard(store_counts, batch_id, lang),
-                    parse_mode="HTML",
+                sent = await _send_telegram_with_retry(
+                    lambda: self.bot.send_message(
+                        chat_id=user["user_id"],
+                        text=text,
+                        reply_markup=get_new_promos_keyboard(store_counts, batch_id, lang),
+                        parse_mode="HTML",
+                    )
                 )
-                delivered += 1
-        except Exception as exc:
-            logger.warning("Failed to deliver grouped promotion alerts: %s", exc)
-            return 0
+                if sent:
+                    delivered += 1
+            except Exception as exc:
+                logger.warning("Failed to deliver grouped promotion alert to user %s: %s", user.get("user_id"), exc)
 
         self._pending_promos.clear()
         await Repository.cleanup_alert_batches()
@@ -113,25 +165,29 @@ class NotificationDispatcher:
                 sent = False
                 if image_url and image_url.startswith("http"):
                     try:
-                        await self.bot.send_photo(
+                        sent = await _send_telegram_with_retry(
+                            lambda: self.bot.send_photo(
+                                chat_id=user_id,
+                                photo=image_url,
+                                caption=card_text,
+                                reply_markup=reply_markup,
+                                parse_mode="HTML",
+                            )
+                        )
+                    except Exception:
+                        sent = False
+
+                if not sent:
+                    sent = await _send_telegram_with_retry(
+                        lambda: self.bot.send_message(
                             chat_id=user_id,
-                            photo=image_url,
-                            caption=card_text,
+                            text=card_text,
                             reply_markup=reply_markup,
                             parse_mode="HTML",
                         )
-                        sent = True
-                    except Exception:
-                        pass
-
-                if not sent:
-                    await self.bot.send_message(
-                        chat_id=user_id,
-                        text=card_text,
-                        reply_markup=reply_markup,
-                        parse_mode="HTML",
                     )
-                await Repository.record_notification_sent(user_id, promo_id)
+                if sent:
+                    await Repository.record_notification_sent(user_id, promo_id)
             except Exception as e:
                 logger.warning(f"Failed to send instant alert to user {user_id}: {e}")
 
@@ -143,16 +199,18 @@ class NotificationDispatcher:
         for u in users:
             user_id = u["user_id"]
             lang = u.get("language", "en")
-            stores = list(await Repository.get_user_store_filters(user_id))
-            cats = list(await Repository.get_user_category_filters(user_id))
-
-            deals = await Repository.get_promos(store_ids=stores, category_ids=cats, limit=5)
-            if not deals:
-                continue
-
-            header = format_digest_header(len(deals), lang=lang)
             try:
-                await self.bot.send_message(chat_id=user_id, text=header, parse_mode="HTML")
+                stores = list(await Repository.get_user_store_filters(user_id))
+                cats = list(await Repository.get_user_category_filters(user_id))
+
+                deals = await Repository.get_promos(store_ids=stores, category_ids=cats, limit=5)
+                if not deals:
+                    continue
+
+                header = format_digest_header(len(deals), lang=lang)
+                await _send_telegram_with_retry(
+                    lambda: self.bot.send_message(chat_id=user_id, text=header, parse_mode="HTML")
+                )
                 for d in deals:
                     card_text = format_promo_card(d, lang=lang)
                     markup = get_promo_card_keyboard(
@@ -169,12 +227,26 @@ class NotificationDispatcher:
                     sent_item = False
                     if img and img.startswith("http"):
                         try:
-                            await self.bot.send_photo(chat_id=user_id, photo=img, caption=card_text, reply_markup=markup, parse_mode="HTML")
-                            sent_item = True
+                            sent_item = await _send_telegram_with_retry(
+                                lambda: self.bot.send_photo(
+                                    chat_id=user_id,
+                                    photo=img,
+                                    caption=card_text,
+                                    reply_markup=markup,
+                                    parse_mode="HTML",
+                                )
+                            )
                         except Exception:
-                            pass
+                            sent_item = False
                     if not sent_item:
-                        await self.bot.send_message(chat_id=user_id, text=card_text, reply_markup=markup, parse_mode="HTML")
+                        await _send_telegram_with_retry(
+                            lambda: self.bot.send_message(
+                                chat_id=user_id,
+                                text=card_text,
+                                reply_markup=markup,
+                                parse_mode="HTML",
+                            )
+                        )
             except Exception as e:
                 logger.warning(f"Failed to send digest to user {user_id}: {e}")
 
@@ -202,8 +274,7 @@ async def alert_batch_loop(dispatcher: NotificationDispatcher, interval_minutes:
 async def digest_loop(dispatcher: NotificationDispatcher):
     last_sent_hour = -1
     while True:
-        now = datetime.now()
-        current_hour = now.hour
+        current_hour = _current_brussels_hour()
         # Check every hour once
         if current_hour != last_sent_hour:
             logger.info(f"Checking scheduled morning digests for hour {current_hour}...")
