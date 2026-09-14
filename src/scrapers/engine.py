@@ -12,6 +12,7 @@ from src.core.constants import SUPERMARKETS
 from src.scrapers.newsletter import NewsletterParser
 from src.scrapers.seed_data import DEMO_PROMOS
 from src.db.repository import Repository
+from src.utils.circuit_breaker import CircuitBreaker, CircuitBreakerOpenException
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,10 @@ class ScraperEngine:
             GenericRetailerScraper("cora", "Cora", SUPERMARKETS["cora"]["url"]),
             GenericRetailerScraper("intermarche", "Intermarché", SUPERMARKETS["intermarche"]["url"]),
         ]
+        self.circuit_breakers: Dict[str, CircuitBreaker] = {
+            s.store_id: CircuitBreaker(name=s.name, failure_threshold=3, recovery_timeout=300.0)
+            for s in self.scrapers
+        }
         # Some retailers return a shell or a protected page to aiohttp. Keep
         # the fast HTTP adapters, then use one shared Chromium runtime only
         # for sources that produced no usable products.
@@ -62,13 +67,19 @@ class ScraperEngine:
 
     async def run_all_scrapers(self) -> int:
         logger.info("Starting live supermarket scrapers run...")
-        tasks = [scraper.fetch_promos() for scraper in self.scrapers]
+        tasks = [
+            self.circuit_breakers[s.store_id].call(s.fetch_promos)
+            for s in self.scrapers
+        ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         new_count = 0
         for i, res in enumerate(results):
             scraper_name = self.scrapers[i].name
             store_id = self.scrapers[i].store_id
+            if isinstance(res, CircuitBreakerOpenException):
+                logger.warning(f"Scraper {scraper_name} skipped (CircuitBreaker is OPEN).")
+                continue
             if isinstance(res, Exception):
                 logger.error(f"Scraper {scraper_name} encountered an error: {res}")
                 continue

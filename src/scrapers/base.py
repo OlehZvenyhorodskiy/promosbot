@@ -54,6 +54,37 @@ def infer_category(title: str, description: str = "") -> str:
                 return cat_id
     return "pantry"
 
+def normalize_title(title: str) -> str:
+    if not title:
+        return ""
+    text = title.lower()
+    # Remove content in parentheses e.g. (bio), (actie)
+    text = re.sub(r"\(.*?\)", " ", text)
+    # Remove packaging / unit indicators like 1L, 500g, 2x75cl, 6x33cl
+    text = re.sub(
+        r"\b\d+(?:[.,]\d+)?\s*(?:kg|g|mg|l|cl|ml|stuks|st|pcs|pack|x\d+(?:[.,]\d+)?\s*(?:cl|ml|l|g)?)\b",
+        " ",
+        text,
+        flags=re.IGNORECASE,
+    )
+    # Remove punctuation
+    text = re.sub(r"[^\w\s]", " ", text)
+    return " ".join(text.split())
+
+def generate_fingerprint(
+    store_id: str,
+    title: str,
+    promo_price: Optional[float] = None,
+    valid_from: Optional[str] = None,
+    valid_until: Optional[str] = None,
+) -> str:
+    norm_title = normalize_title(title)
+    price_str = f"{promo_price:.2f}" if promo_price is not None else "none"
+    vf_str = (valid_from or "").strip() or "none"
+    vu_str = (valid_until or "").strip() or "none"
+    key = f"{store_id.lower().strip()}|{norm_title}|{price_str}|{vf_str}|{vu_str}"
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:24]
+
 class BaseScraper(ABC):
     def __init__(self, store_id: str, name: str):
         self.store_id = store_id
@@ -62,9 +93,10 @@ class BaseScraper(ABC):
     @staticmethod
     def stable_external_id(store_id: str, title: str, source_key: str = "") -> str:
         """Use a process-independent ID so a restart does not create fake promos."""
-        normalized = " ".join((title or "").lower().split())
-        raw = f"{store_id}:{source_key or normalized}"
-        return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
+        if source_key:
+            raw = f"{store_id}:{source_key}"
+            return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
+        return generate_fingerprint(store_id, title)
 
     @abstractmethod
     async def fetch_promos(self) -> List[PromoItem]:

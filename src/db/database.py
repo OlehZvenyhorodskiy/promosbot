@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS promos (
     id TEXT PRIMARY KEY,
     store_id TEXT NOT NULL,
     external_id TEXT,
+    fingerprint TEXT,
     title TEXT NOT NULL,
     description TEXT,
     original_price REAL,
@@ -54,6 +55,7 @@ CREATE TABLE IF NOT EXISTS promos (
 CREATE INDEX IF NOT EXISTS idx_promos_store ON promos(store_id);
 CREATE INDEX IF NOT EXISTS idx_promos_category ON promos(category_id);
 CREATE INDEX IF NOT EXISTS idx_promos_valid ON promos(valid_until);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_promos_fingerprint ON promos(fingerprint);
 
 CREATE TABLE IF NOT EXISTS user_favorites (
     user_id INTEGER NOT NULL,
@@ -111,4 +113,14 @@ async def init_db():
             await conn.execute(
                 "ALTER TABLE users ADD COLUMN language_selected INTEGER NOT NULL DEFAULT 1"
             )
+
+        # Migration: Ensure promos table has the fingerprint column and unique index
+        async with conn.execute("PRAGMA table_info(promos)") as cursor:
+            promo_columns = {row[1] for row in await cursor.fetchall()}
+        if "fingerprint" not in promo_columns:
+            await conn.execute("ALTER TABLE promos ADD COLUMN fingerprint TEXT")
+        await conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_promos_fingerprint ON promos(fingerprint)"
+        )
+
         await conn.commit()

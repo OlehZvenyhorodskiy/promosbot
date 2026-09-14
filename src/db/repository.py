@@ -3,13 +3,15 @@ import hashlib
 from src.db.database import get_db_connection
 from src.core.constants import SUPERMARKETS, CATEGORIES, DEFAULT_LANGUAGE
 from src.services.search_service import expand_search_terms
+from src.scrapers.base import generate_fingerprint
 
 PROMO_UPSERT_SQL = """
 INSERT INTO promos (
-    id, store_id, external_id, title, description, original_price, promo_price,
+    id, store_id, external_id, fingerprint, title, description, original_price, promo_price,
     discount_text, unit_info, image_url, deal_url, category_id, valid_from, valid_until, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 ON CONFLICT(id) DO UPDATE SET
+    fingerprint = COALESCE(excluded.fingerprint, promos.fingerprint),
     title = excluded.title,
     description = excluded.description,
     original_price = excluded.original_price,
@@ -187,19 +189,43 @@ class Repository:
         store_id = promo_data.get("store_id", "generic")
         title = promo_data.get("title", "")
         ext_id = promo_data.get("external_id")
-        promo_id = promo_data.get("id") or cls.generate_promo_id(store_id, title, ext_id)
+        fingerprint = promo_data.get("fingerprint") or generate_fingerprint(
+            store_id,
+            title,
+            promo_data.get("promo_price"),
+            promo_data.get("valid_from"),
+            promo_data.get("valid_until"),
+        )
+        promo_data["fingerprint"] = fingerprint
 
         async with get_db_connection() as conn:
-            async with conn.execute("SELECT id FROM promos WHERE id = ?", (promo_id,)) as cursor:
-                existing = await cursor.fetchone()
+            # Check if deal already exists by fingerprint first, then by id
+            existing_id = None
+            if fingerprint:
+                async with conn.execute(
+                    "SELECT id FROM promos WHERE fingerprint = ?", (fingerprint,)
+                ) as cursor:
+                    row = await cursor.fetchone()
+                    if row:
+                        existing_id = row["id"]
 
-            is_new = existing is None
+            if not existing_id:
+                candidate_id = promo_data.get("id") or cls.generate_promo_id(store_id, title, ext_id)
+                async with conn.execute("SELECT id FROM promos WHERE id = ?", (candidate_id,)) as cursor:
+                    row = await cursor.fetchone()
+                    if row:
+                        existing_id = row["id"]
+
+            is_new = existing_id is None
+            promo_id = existing_id or promo_data.get("id") or cls.generate_promo_id(store_id, title, fingerprint)
+
             await conn.execute(
                 PROMO_UPSERT_SQL,
                 (
                     promo_id,
                     store_id,
                     ext_id,
+                    fingerprint,
                     title,
                     promo_data.get("description", ""),
                     promo_data.get("original_price"),
@@ -218,45 +244,76 @@ class Repository:
 
     @classmethod
     async def save_promos_bulk(cls, promos: List[Dict[str, Any]]) -> List[Tuple[str, bool]]:
-        """Upsert one scraper response in a single transaction."""
-        prepared = []
+        """Upsert one scraper response in a single transaction with fingerprint deduplication."""
+        if not promos:
+            return []
+
+        prepared_meta = []
         for promo_data in promos:
             store_id = promo_data.get("store_id", "generic")
             title = promo_data.get("title", "")
             ext_id = promo_data.get("external_id")
-            promo_id = promo_data.get("id") or cls.generate_promo_id(store_id, title, ext_id)
-            prepared.append(
-                (
-                    promo_id,
-                    store_id,
-                    ext_id,
-                    title,
-                    promo_data.get("description", ""),
-                    promo_data.get("original_price"),
-                    promo_data.get("promo_price"),
-                    promo_data.get("discount_text", ""),
-                    promo_data.get("unit_info", ""),
-                    promo_data.get("image_url", ""),
-                    promo_data.get("deal_url", ""),
-                    promo_data.get("category_id", "pantry"),
-                    promo_data.get("valid_from", ""),
-                    promo_data.get("valid_until", ""),
-                )
+            fingerprint = promo_data.get("fingerprint") or generate_fingerprint(
+                store_id,
+                title,
+                promo_data.get("promo_price"),
+                promo_data.get("valid_from"),
+                promo_data.get("valid_until"),
             )
+            promo_data["fingerprint"] = fingerprint
+            prepared_meta.append({
+                "store_id": store_id,
+                "title": title,
+                "ext_id": ext_id,
+                "fingerprint": fingerprint,
+                "data": promo_data,
+            })
 
-        if not prepared:
-            return []
-
-        ids = [row[0] for row in prepared]
-        placeholders = ",".join("?" for _ in ids)
         async with get_db_connection() as conn:
-            async with conn.execute(
-                f"SELECT id FROM promos WHERE id IN ({placeholders})", ids
-            ) as cursor:
-                existing = {row["id"] for row in await cursor.fetchall()}
-            await conn.executemany(PROMO_UPSERT_SQL, prepared)
+            # Query existing promos by fingerprints
+            fps = [m["fingerprint"] for m in prepared_meta if m["fingerprint"]]
+            fp_to_id = {}
+            if fps:
+                fp_placeholders = ",".join("?" for _ in fps)
+                async with conn.execute(
+                    f"SELECT id, fingerprint FROM promos WHERE fingerprint IN ({fp_placeholders})",
+                    fps,
+                ) as cursor:
+                    for row in await cursor.fetchall():
+                        fp_to_id[row["fingerprint"]] = row["id"]
+
+            upsert_rows = []
+            results = []
+            for meta in prepared_meta:
+                fp = meta["fingerprint"]
+                data = meta["data"]
+                existing_id = fp_to_id.get(fp)
+                is_new = existing_id is None
+                promo_id = existing_id or data.get("id") or cls.generate_promo_id(meta["store_id"], meta["title"], fp)
+                results.append((promo_id, is_new))
+                upsert_rows.append(
+                    (
+                        promo_id,
+                        meta["store_id"],
+                        meta["ext_id"],
+                        fp,
+                        meta["title"],
+                        data.get("description", ""),
+                        data.get("original_price"),
+                        data.get("promo_price"),
+                        data.get("discount_text", ""),
+                        data.get("unit_info", ""),
+                        data.get("image_url", ""),
+                        data.get("deal_url", ""),
+                        data.get("category_id", "pantry"),
+                        data.get("valid_from", ""),
+                        data.get("valid_until", ""),
+                    )
+                )
+
+            await conn.executemany(PROMO_UPSERT_SQL, upsert_rows)
             await conn.commit()
-        return [(promo_id, promo_id not in existing) for promo_id in ids]
+            return results
 
     @staticmethod
     async def get_promos(
