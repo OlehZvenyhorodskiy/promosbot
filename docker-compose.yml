@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  bot:
+    build: .
+    container_name: belgium_promos_bot
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - PORT=8080
+      - HOST=0.0.0.0
+      - DB_PATH=/app/data/promos.db
+      - LOG_LEVEL=INFO
+      - SCRAPE_INTERVAL_MINUTES=60
+      - ALERT_BATCH_INTERVAL_MINUTES=10
+      - KEEP_ALIVE_URL=
+    volumes:
+      - ./data:/app/data

@@ -1,0 +1,313 @@
+from typing import Dict, Any
+from src.core.constants import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES, SUPERMARKETS, CATEGORIES
+
+TRANSLATIONS: Dict[str, Dict[str, str]] = {
+    "en": {
+        "welcome_title": "🇧🇪 <b>Welcome to Belgium Promo's!</b>",
+        "welcome_body": (
+            "Never miss a discount in Belgian supermarkets.\n\n"
+            "I track promotions and weekly folders across <b>Colruyt, Carrefour, Delhaize, Aldi, Lidl, Albert Heijn, Jumbo, Spar, Cora, and Intermarché</b>.\n\n"
+            "Choose your language below to personalize your experience:"
+        ),
+        "main_hub_title": "🇧🇪 <b>Belgium Promo's Hub</b>",
+        "main_hub_body": "Explore active supermarket deals, browse weekly digital folders, or customize your notification preferences below:",
+        "choose_language": "🌐 <b>Select your language:</b>",
+        "language_updated": "✅ Language changed to English.",
+        "menu_promos": "🔍 Browse Deals",
+        "menu_search": "🔎 Search Product",
+        "menu_folders": "📰 Folders & Leaflets",
+        "menu_stores": "🏪 Supermarkets",
+        "menu_categories": "🏷️ Categories",
+        "menu_settings": "⚙️ Settings",
+        "menu_favorites": "⭐ Saved Deals",
+        "menu_test": "🧪 Test Promo Card",
+        "menu_help": "ℹ️ Help",
+        "store_drilldown_title": "🏪 <b>Browse by Belgian Supermarket</b>\nSelect a store below to view current deals and weekly folders:",
+        "store_overview_title": "{emoji} <b>{name}</b>: <b>{count} Active Deals</b>\n\nChoose an action or category to explore discounts:",
+        "view_all_store_deals": "📋 View All Deals ({count})",
+        "open_folder_btn": "📰 View Official Weekly Folder",
+        "all_stores_btn": "🌟 View All Stores ({count} deals)",
+        "folders_title": "📰 <b>Official Belgian Supermarket Folders & Leaflets</b>\nTap any store to open their official weekly promotional catalogue:",
+        "folder_generic_btn": "🌐 Open Belgian Folder Hub (Folderbode)",
+        "stores_title": "🏪 <b>Supermarket Filters</b>\nToggle which stores you want to receive alerts from:",
+        "all_stores_on": "✅ Select All",
+        "all_stores_off": "⬜ Deselect All",
+        "categories_title": "🏷️ <b>Category Filters</b>\nChoose which product categories you want deals for:",
+        "all_categories_on": "✅ Select All",
+        "all_categories_off": "⬜ Deselect All",
+        "settings_title": "⚙️ <b>Notification & Preference Settings</b>",
+        "settings_lang_btn": "🌐 Change Language",
+        "settings_stores_btn": "🏪 Supermarket Filters",
+        "settings_categories_btn": "🏷️ Category Filters",
+        "settings_notif_btn": "🔔 Notification Schedule",
+        "notif_title": "🔔 <b>Notification Delivery Options</b>\n\nChoose how you want to receive new deals:",
+        "notif_instant": "🔔 New deal digest (every 10 minutes)",
+        "notif_digest": "🌅 Morning Digest (daily at 08:00)",
+        "notif_off": "🔕 Muted (no notifications)",
+        "notif_updated": "✅ Notification preference saved: <b>{mode}</b>",
+        "new_promos_summary": "🆕 <b>New promotions detected</b>\n\n{total} new deals are grouped by supermarket. Choose a store:",
+        "search_prompt": "🔎 <b>Multilingual Product Search</b>\n\nType any product keyword (e.g. <i>kaas, beer, croissant, milk, salmon, олія, молоко, сир</i>) to find active deals.",
+        "search_results_title": "🔎 Found {count} promotions for '<b>{query}</b>':",
+        "no_promos_found": "No promotions found matching your current filters.",
+        "promo_page": "Deal {current} of {total}",
+        "btn_open_deal": "🛒 View on Store Site",
+        "btn_save_fav": "⭐ Save Deal",
+        "btn_remove_fav": "❌ Remove from Saved",
+        "btn_next": "Next ➡️",
+        "btn_prev": "⬅️ Prev",
+        "btn_back_menu": "🏪 All Supermarkets",
+        "btn_back_stores": "🏪 All Supermarkets",
+        "btn_back_categories": "⬅️ Store Categories",
+        "btn_back_settings": "⬅️ Back to Settings",
+        "fav_saved": "⭐ Saved to your favorites!",
+        "fav_removed": "Removed from your favorites.",
+        "fav_empty": "You have no saved deals yet. Tap ⭐ Save Deal when browsing promos.",
+        "fav_title": "⭐ <b>Your Saved Deals</b> ({count}):",
+        "test_promo_intro": "🧪 <b>Live Test Promo Card</b>\nHere is how an authentic Belgian deal alert looks in your chat:",
+        "help_text": (
+            "🇧🇪 <b>Belgium Promo's Bot Help</b>\n\n"
+            "• <b>Browse Deals</b>: Explore promos store-by-store with live counts.\n"
+            "• <b>Folders & Leaflets</b>: Instant links to weekly brochures for all 10 supermarkets.\n"
+            "• <b>Search</b>: Type any product in Ukrainian, English, Dutch, or French (e.g. 'молоко', 'cheese', 'bier').\n"
+            "• <b>Settings</b>: Customize stores, categories, and morning digest hours."
+        ),
+        "valid_until": "Valid until",
+        "discount_badge": "DISCOUNT",
+    },
+    "uk": {
+        "welcome_title": "🇧🇪 <b>Ласкаво просимо до Belgium Promo's!</b>",
+        "welcome_body": (
+            "Більше жодної пропущеної знижки в найбільших супермаркетах Бельгії.\n\n"
+            "Я відстежую щотижневі брошури та акції в <b>Colruyt, Carrefour, Delhaize, Aldi, Lidl, Albert Heijn, Jumbo, Spar, Cora та Intermarché</b>.\n\n"
+            "Оберіть мову інтерфейсу нижче для продовження:"
+        ),
+        "main_hub_title": "🇧🇪 <b>Головне меню Belgium Promo's</b>",
+        "main_hub_body": "Оберіть дію нижче для перегляду актуальних акцій у магазинах Бельгії, щотижневих буклетів або налаштувань:",
+        "choose_language": "🌐 <b>Оберіть мову інтерфейсу:</b>",
+        "language_updated": "✅ Мову змінено на українську.",
+        "menu_promos": "🔍 Переглянути акції",
+        "menu_search": "🔎 Пошук товару",
+        "menu_folders": "📰 Буклети та брошури",
+        "menu_stores": "🏪 Супермаркети",
+        "menu_categories": "🏷️ Категорії",
+        "menu_settings": "⚙️ Налаштування",
+        "menu_favorites": "⭐ Збережені знижки",
+        "menu_test": "🧪 Тестова картка",
+        "menu_help": "ℹ️ Допомога",
+        "store_drilldown_title": "🏪 <b>Каталог супермаркетів Бельгії</b>\nОберіть магазин, щоб переглянути актуальні акції та буклети:",
+        "store_overview_title": "{emoji} <b>{name}</b>: <b>{count} активних акцій</b>\n\nОберіть категорію або дію нижче:",
+        "view_all_store_deals": "📋 Переглянути всі акції ({count})",
+        "open_folder_btn": "📰 Відкрити офіційний буклет",
+        "all_stores_btn": "🌟 Всі магазини разом ({count} акцій)",
+        "folders_title": "📰 <b>Офіційні щотижневі буклети та каталоги</b>\nНатисніть на будь-який супермаркет для перегляду свіжого рекламного буклету:",
+        "folder_generic_btn": "🌐 Агрегатор буклетів Бельгії (Folderbode)",
+        "stores_title": "🏪 <b>Фільтр супермаркетів Бельгії</b>\nУвімкніть магазини, акції яких хочете отримувати:",
+        "all_stores_on": "✅ Обрати всі",
+        "all_stores_off": "⬜ Зняти всі",
+        "categories_title": "🏷️ <b>Фільтр категорій</b>\nОберіть категорії товарів, які вас цікавлять:",
+        "all_categories_on": "✅ Обрати всі",
+        "all_categories_off": "⬜ Зняти всі",
+        "settings_title": "⚙️ <b>Налаштування сповіщень та профілю</b>",
+        "settings_lang_btn": "🌐 Змінити мову",
+        "settings_stores_btn": "🏪 Фільтри супермаркетів",
+        "settings_categories_btn": "🏷️ Фільтри категорій",
+        "settings_notif_btn": "🔔 Графік сповіщень",
+        "notif_title": "🔔 <b>Режим сповіщень</b>\n\nОберіть, як ви хочете отримувати свіжі знижки:",
+        "notif_instant": "🔔 Зведення нових акцій (кожні 10 хвилин)",
+        "notif_digest": "🌅 Ранковий дайджест (щодня о 08:00)",
+        "notif_off": "🔕 Без сповіщень (тихий режим)",
+        "notif_updated": "✅ Режим сповіщень збережено: <b>{mode}</b>",
+        "new_promos_summary": "🆕 <b>Знайдено нові акції</b>\n\nНових акцій: {total}. Оберіть магазин:",
+        "search_prompt": "🔎 <b>Багатомовний пошук товарів</b>\n\nНапишіть назву товару українською, нідерландською, французькою чи англійською (наприклад: <i>молоко, сир, пиво, олія, хліб, kaas, bier</i>):",
+        "search_results_title": "🔎 Знайдено {count} акцій за запитом '<b>{query}</b>':",
+        "no_promos_found": "За вашими фільтрами зараз немає активних акцій.",
+        "promo_page": "Акція {current} з {total}",
+        "btn_open_deal": "🛒 Відкрити в магазині",
+        "btn_save_fav": "⭐ Зберегти",
+        "btn_remove_fav": "❌ Видалити зі збережених",
+        "btn_next": "Далі ➡️",
+        "btn_prev": "⬅️ Назад",
+        "btn_back_menu": "🏪 До списку магазинів",
+        "btn_back_stores": "🏪 До списку магазинів",
+        "btn_back_categories": "⬅️ До категорій магазину",
+        "btn_back_settings": "⬅️ До налаштувань",
+        "fav_saved": "⭐ Додано до збережених!",
+        "fav_removed": "Видалено зі збережених.",
+        "fav_empty": "У вас ще немає збережених акцій. Натискайте ⭐ Зберегти під час перегляду знижок.",
+        "fav_title": "⭐ <b>Ваші збережені акції</b> ({count}):",
+        "test_promo_intro": "🧪 <b>Зразок акційної картки</b>\nОсь так виглядає картка акції зі знижкою та фото в чаті:",
+        "help_text": (
+            "🇧🇪 <b>Довідка Belgium Promo's Bot</b>\n\n"
+            "• <b>Перегляд акцій</b>: Зручний каталог по кожній мережі супермаркетів з точною кількістю акцій.\n"
+            "• <b>Буклети та брошури</b>: Прямі посилання на щотижневі буклети 10 супермаркетів Бельгії.\n"
+            "• <b>Пошук</b>: Пишіть українською (наприклад: 'молоко', 'сир', 'пиво'), бот сам знайде відповідні товари нідерландською та французькою.\n"
+            "• <b>Налаштування</b>: Регулюйте фільтри магазинів та ранковий дайджест."
+        ),
+        "valid_until": "Діє до",
+        "discount_badge": "АКЦІЯ",
+    },
+    "nl": {
+        "welcome_title": "🇧🇪 <b>Welkom bij Belgium Promo's!</b>",
+        "welcome_body": (
+            "Mis nooit meer een promotie of folder in Belgische supermarkten.\n\n"
+            "Ik volg acties en folders op bij <b>Colruyt, Carrefour, Delhaize, Aldi, Lidl, Albert Heijn, Jumbo, Spar, Cora en Intermarché</b>.\n\n"
+            "Kies hieronder uw voorkeurstaal om te beginnen:"
+        ),
+        "main_hub_title": "🇧🇪 <b>Belgium Promo's Hub</b>",
+        "main_hub_body": "Bekijk actuele supermarktaanbiedingen, blader door wekelijkse folders of pas uw instellingen aan:",
+        "choose_language": "🌐 <b>Kies uw taal:</b>",
+        "language_updated": "✅ Taal gewijzigd naar het Nederlands.",
+        "menu_promos": "🔍 Bekijk Promo's",
+        "menu_search": "🔎 Zoek Product",
+        "menu_folders": "📰 Folders & Folders",
+        "menu_stores": "🏪 Supermarkten",
+        "menu_categories": "🏷️ Categorieën",
+        "menu_settings": "⚙️ Instellingen",
+        "menu_favorites": "⭐ Bewaarde Promo's",
+        "menu_test": "🧪 Test Promokaart",
+        "menu_help": "ℹ️ Hulp",
+        "store_drilldown_title": "🏪 <b>Supermarkten Overzicht</b>\nSelecteer een supermarkt om actuele aanbiedingen en folders te bekijken:",
+        "store_overview_title": "{emoji} <b>{name}</b>: <b>{count} Actieve Promo's</b>\n\nKies een optie of categorie:",
+        "view_all_store_deals": "📋 Bekijk alle promo's ({count})",
+        "open_folder_btn": "📰 Bekijk officiële folder",
+        "all_stores_btn": "🌟 Alle winkels ({count} promo's)",
+        "folders_title": "📰 <b>Officiële Belgische Folders & Brochures</b>\nTik op een supermarkt om de nieuwste folder te openen:",
+        "folder_generic_btn": "🌐 Belgische Folder Hub (Folderbode)",
+        "stores_title": "🏪 <b>Supermarktfilters</b>\nKies welke supermarkten je wil volgen:",
+        "all_stores_on": "✅ Alles selecteren",
+        "all_stores_off": "⬜ Alles deselecteren",
+        "categories_title": "🏷️ <b>Categoriefilters</b>\nKies de gewenste productcategorieën:",
+        "all_categories_on": "✅ Alles selecteren",
+        "all_categories_off": "⬜ Alles deselecteren",
+        "settings_title": "⚙️ <b>Instellingen & Voorkeuren</b>",
+        "settings_lang_btn": "🌐 Taal wijzigen",
+        "settings_stores_btn": "🏪 Supermarktfilters",
+        "settings_categories_btn": "🏷️ Categoriefilters",
+        "settings_notif_btn": "🔔 Meldingsvoorkeuren",
+        "notif_title": "🔔 <b>Meldingsvoorkeuren</b>\n\nKies hoe je nieuwe promoties wil ontvangen:",
+        "notif_instant": "🔔 Overzicht van nieuwe promo's (elke 10 minuten)",
+        "notif_digest": "🌅 Ochtendoverzicht (dagelijks om 08:00)",
+        "notif_off": "🔕 Gedempt (geen meldingen)",
+        "notif_updated": "✅ Meldingsvoorkeur opgeslagen: <b>{mode}</b>",
+        "new_promos_summary": "🆕 <b>Nieuwe promoties gevonden</b>\n\n{total} nieuwe aanbiedingen gegroepeerd per supermarkt. Kies een winkel:",
+        "search_prompt": "🔎 <b>Product zoeken</b>\n\nTyp een trefwoord (bijv. <i>kaas, bier, croissant, melk, zalm</i>) om actieve promo's te vinden.",
+        "search_results_title": "🔎 {count} promoties gevonden voor '<b>{query}</b>':",
+        "no_promos_found": "Geen promoties gevonden voor jouw huidige filters.",
+        "promo_page": "Aanbieding {current} van {total}",
+        "btn_open_deal": "🛒 Bekijk in de winkel",
+        "btn_save_fav": "⭐ Bewaren",
+        "btn_remove_fav": "❌ Verwijderen",
+        "btn_next": "Volgende ➡️",
+        "btn_prev": "⬅️ Vorige",
+        "btn_back_menu": "🏪 Alle Supermarkten",
+        "btn_back_stores": "🏪 Alle Supermarkten",
+        "btn_back_categories": "⬅️ Winkelcategorieën",
+        "btn_back_settings": "⬅️ Terug naar instellingen",
+        "fav_saved": "⭐ Opgeslagen in favorieten!",
+        "fav_removed": "Verwijderd uit favorieten.",
+        "fav_empty": "Je hebt nog geen bewaarde promoties. Tik op ⭐ Bewaren tijdens het bladeren.",
+        "fav_title": "⭐ <b>Jouw bewaarde promo's</b> ({count}):",
+        "test_promo_intro": "🧪 <b>Voorbeeld van een promokaart</b>\nZo ziet een deal eruit met foto, prijs en korting:",
+        "help_text": (
+            "🇧🇪 <b>Belgium Promo's Hulp</b>\n\n"
+            "• <b>Bekijk Promo's</b>: Blader per supermarkt met actuele dealaantallen.\n"
+            "• <b>Folders</b>: Directe links naar de wekelijkse folders van alle 10 ketens.\n"
+            "• <b>Zoeken</b>: Typ producten in meerdere talen.\n"
+            "• <b>Instellingen</b>: Pas winkels, categorieën en meldingsschema aan."
+        ),
+        "valid_until": "Geldig t/m",
+        "discount_badge": "PROMOTIE",
+    },
+    "fr": {
+        "welcome_title": "🇧🇪 <b>Bienvenue sur Belgium Promo's !</b>",
+        "welcome_body": (
+            "Ne manquez plus aucune promotion ni dépliant en Belgique.\n\n"
+            "Je surveille les réductions et catalogues chez <b>Colruyt, Carrefour, Delhaize, Aldi, Lidl, Albert Heijn, Jumbo, Spar, Cora et Intermarché</b>.\n\n"
+            "Choisissez votre langue ci-dessous pour commencer :"
+        ),
+        "main_hub_title": "🇧🇪 <b>Menu Principal Belgium Promo's</b>",
+        "main_hub_body": "Découvrez les promotions actuelles, consultez les dépliants hebdomadaires ou gérez vos préférences :",
+        "choose_language": "🌐 <b>Choisissez votre langue :</b>",
+        "language_updated": "✅ Langue modifiée en français.",
+        "menu_promos": "🔍 Découvrir les Promos",
+        "menu_search": "🔎 Rechercher un Produit",
+        "menu_folders": "📰 Dépliants & Catalogues",
+        "menu_stores": "🏪 Supermarchés",
+        "menu_categories": "🏷️ Catégories",
+        "menu_settings": "⚙️ Paramètres",
+        "menu_favorites": "⭐ Promos Enregistrées",
+        "menu_test": "🧪 Carte Promo Test",
+        "menu_help": "ℹ️ Aide",
+        "store_drilldown_title": "🏪 <b>Supermarchés Belges</b>\nSélectionnez une enseigne pour consulter ses promotions et dépliants :",
+        "store_overview_title": "{emoji} <b>{name}</b> : <b>{count} Offres Actives</b>\n\nChoisissez une option ou un rayon :",
+        "view_all_store_deals": "📋 Voir toutes les promos ({count})",
+        "open_folder_btn": "📰 Voir le dépliant officiel",
+        "all_stores_btn": "🌟 Toutes les enseignes ({count} offres)",
+        "folders_title": "📰 <b>Dépliants & Catalogues Officiels</b>\nCliquez sur une enseigne pour ouvrir son dépliant promotionnel de la semaine :",
+        "folder_generic_btn": "🌐 Portail Dépliants Belgique (Folderbode)",
+        "stores_title": "🏪 <b>Filtres des Supermarchés</b>\nSélectionnez les enseignes à suivre :",
+        "all_stores_on": "✅ Tout sélectionner",
+        "all_stores_off": "⬜ Tout désélectionner",
+        "categories_title": "🏷️ <b>Filtres de Catégories</b>\nChoisissez les rayons qui vous intéressent :",
+        "all_categories_on": "✅ Tout sélectionner",
+        "all_categories_off": "⬜ Tout désélectionner",
+        "settings_title": "⚙️ <b>Paramètres & Préférences</b>",
+        "settings_lang_btn": "🌐 Changer de Langue",
+        "settings_stores_btn": "🏪 Filtres des Magasins",
+        "settings_categories_btn": "🏷️ Filtres des Catégories",
+        "settings_notif_btn": "🔔 Fréquence des Alertes",
+        "notif_title": "🔔 <b>Options de Notifications</b>\n\nChoisissez comment recevoir vos offres :",
+        "notif_instant": "🔔 Récapitulatif des nouvelles promos (toutes les 10 minutes)",
+        "notif_digest": "🌅 Récapitulatif matinal (chaque jour à 08h00)",
+        "notif_off": "🔕 Muet (aucune notification)",
+        "notif_updated": "✅ Préférence d'alerte enregistrée : <b>{mode}</b>",
+        "new_promos_summary": "🆕 <b>Nouvelles promotions détectées</b>\n\n{total} nouvelles offres regroupées par enseigne. Choisissez un magasin :",
+        "search_prompt": "🔎 <b>Recherche Multilingue</b>\n\nEnvoyez un mot-clé (ex: <i>fromage, bière, croissant, lait, saumon, pain, poulet</i>) pour trouver les réductions en cours.",
+        "search_results_title": "🔎 {count} promotions trouvées pour '<b>{query}</b>' :",
+        "no_promos_found": "Aucune promotion ne correspond à vos filtres actuels.",
+        "promo_page": "Offre {current} sur {total}",
+        "btn_open_deal": "🛒 Voir sur le site du magasin",
+        "btn_save_fav": "⭐ Enregistrer",
+        "btn_remove_fav": "❌ Retirer",
+        "btn_next": "Suivant ➡️",
+        "btn_prev": "⬅️ Précédent",
+        "btn_back_menu": "🏪 Tous les Supermarchés",
+        "btn_back_stores": "🏪 Tous les Supermarchés",
+        "btn_back_categories": "⬅️ Rayons du Magasin",
+        "btn_back_settings": "⬅️ Retour aux Paramètres",
+        "fav_saved": "⭐ Ajouté aux favoris !",
+        "fav_removed": "Retiré des favoris.",
+        "fav_empty": "Aucune promotion enregistrée pour l'instant. Cliquez sur ⭐ Enregistrer lors de vos recherches.",
+        "fav_title": "⭐ <b>Vos Promotions Enregistrées</b> ({count}) :",
+        "test_promo_intro": "🧪 <b>Aperçu d'une Carte Promo</b>\nVoici la présentation d'une réduction avec photo, prix et calcul :",
+        "help_text": (
+            "🇧🇪 <b>Aide Belgium Promo's Bot</b>\n\n"
+            "• <b>Découvrir les Promos</b> : Explorez les offres par magasin avec le nombre d'offres en direct.\n"
+            "• <b>Dépliants & Catalogues</b> : Liens directs vers les dépliants de chaque chaîne.\n"
+            "• <b>Recherche</b> : Tapez vos produits en français, néerlandais, anglais ou ukrainien.\n"
+            "• <b>Paramètres</b> : Configurez les magasins, catégories et notifications."
+        ),
+        "valid_until": "Valable jusqu'au",
+        "discount_badge": "PROMO",
+    },
+}
+
+def get_text(key: str, lang: str = DEFAULT_LANGUAGE, **kwargs) -> str:
+    lang = lang if lang in TRANSLATIONS else DEFAULT_LANGUAGE
+    template = TRANSLATIONS.get(lang, {}).get(key)
+    if template is None:
+        template = TRANSLATIONS[DEFAULT_LANGUAGE].get(key, key)
+    if kwargs:
+        try:
+            return template.format(**kwargs)
+        except Exception:
+            return template
+    return template
+
+def get_category_name(category_id: str, lang: str = DEFAULT_LANGUAGE) -> str:
+    lang = lang if lang in SUPPORTED_LANGUAGES else DEFAULT_LANGUAGE
+    cat = CATEGORIES.get(category_id)
+    if not cat:
+        return category_id
+    names = cat.get("names", {})
+    return names.get(lang, names.get(DEFAULT_LANGUAGE, category_id))
