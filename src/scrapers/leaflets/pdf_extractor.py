@@ -95,6 +95,33 @@ class PDFLeafletExtractor:
             items.append(item)
         return items
 
+    def extract_page_texts(self, pdf_bytes: bytes) -> List[str]:
+        """Extract the raw vector text of every page (one string per page).
+
+        Store-specific scrapers (e.g. Jumbo) use this to run their own parsing
+        rules over the flyer text. Returns [] when pypdf is unavailable or the
+        PDF cannot be read.
+        """
+        if not pypdf:
+            logger.debug("pypdf is not installed. PDF text extraction skipped.")
+            return []
+        pages: List[str] = []
+        pypdf_logger = logging.getLogger("pypdf")
+        previous_level = pypdf_logger.level
+        # Decorative flyer fonts (not the product text) trigger recurring
+        # "fontTools is required" warnings; the extraction itself is fine.
+        pypdf_logger.setLevel(logging.ERROR)
+        try:
+            reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
+            for page in reader.pages:
+                pages.append(page.extract_text() or "")
+        except Exception as err:
+            logger.error(f"Error extracting PDF page texts: {err}")
+            return []
+        finally:
+            pypdf_logger.setLevel(previous_level)
+        return pages
+
     def extract_from_pdf_bytes(self, pdf_bytes: bytes, store_id: Optional[str] = None) -> List[PromoItem]:
         """Extract deals from vector text streams in a PDF."""
         store = store_id or self.store_id

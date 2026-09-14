@@ -14,6 +14,8 @@ from src.scrapers.action import ActionScraper
 from src.scrapers.kruidvat import KruidvatScraper
 from src.scrapers.okay import OkayScraper
 from src.scrapers.generic import GenericRetailerScraper
+from src.scrapers.jumbo import JumboScraper
+from src.scrapers.spar import SparScraper
 from src.scrapers.browser import BrowserRetailerScraper
 from src.core.constants import SUPERMARKETS
 from src.scrapers.newsletter import NewsletterParser
@@ -47,8 +49,8 @@ class ScraperEngine:
             OkayScraper(),
             BioplanetScraper(),
             GenericRetailerScraper("albert_heijn", "Albert Heijn", SUPERMARKETS["albert_heijn"]["url"]),
-            GenericRetailerScraper("jumbo", "Jumbo", SUPERMARKETS["jumbo"]["url"]),
-            GenericRetailerScraper("spar", "Spar", SUPERMARKETS["spar"]["url"]),
+            JumboScraper(),
+            SparScraper(),
             GenericRetailerScraper("intermarche", "Intermarché", SUPERMARKETS["intermarche"]["url"]),
         ]
         self.circuit_breakers: Dict[str, CircuitBreaker] = {
