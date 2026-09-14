@@ -29,6 +29,7 @@ async def setup_bot_commands(bot: Bot):
         BotCommand(command="stores", description="🏪 Select tracked supermarkets"),
         BotCommand(command="categories", description="🏷️ Filter product categories"),
         BotCommand(command="favorites", description="⭐ View saved discounts"),
+        BotCommand(command="cart", description="🛒 Shopping list & savings calculator"),
         BotCommand(command="settings", description="⚙️ Language & notification alerts"),
         BotCommand(command="test_promo", description="🧪 Test promo card & notifications"),
         BotCommand(command="help", description="ℹ️ Information & instructions"),

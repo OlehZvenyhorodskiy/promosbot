@@ -504,6 +504,83 @@ class Repository:
                 return [dict(r) for r in rows]
 
     @staticmethod
+    async def toggle_cart(user_id: int, promo_id: str) -> bool:
+        async with get_db_connection() as conn:
+            async with conn.execute(
+                "SELECT 1 FROM user_cart WHERE user_id = ? AND promo_id = ?",
+                (user_id, promo_id),
+            ) as cursor:
+                exists = await cursor.fetchone()
+
+            if exists:
+                await conn.execute(
+                    "DELETE FROM user_cart WHERE user_id = ? AND promo_id = ?",
+                    (user_id, promo_id),
+                )
+                await conn.commit()
+                return False
+            else:
+                await conn.execute(
+                    "INSERT INTO user_cart (user_id, promo_id) VALUES (?, ?)",
+                    (user_id, promo_id),
+                )
+                await conn.commit()
+                return True
+
+    @staticmethod
+    async def is_in_cart(user_id: int, promo_id: str) -> bool:
+        async with get_db_connection() as conn:
+            async with conn.execute(
+                "SELECT 1 FROM user_cart WHERE user_id = ? AND promo_id = ?",
+                (user_id, promo_id),
+            ) as cursor:
+                row = await cursor.fetchone()
+                return row is not None
+
+    @staticmethod
+    async def get_user_cart(user_id: int) -> List[Dict[str, Any]]:
+        async with get_db_connection() as conn:
+            async with conn.execute(
+                """SELECT p.* FROM promos p
+                   INNER JOIN user_cart c ON p.id = c.promo_id
+                   WHERE c.user_id = ?
+                   ORDER BY c.added_at DESC""",
+                (user_id,),
+            ) as cursor:
+                rows = await cursor.fetchall()
+                return [dict(r) for r in rows]
+
+    @staticmethod
+    async def clear_user_cart(user_id: int) -> int:
+        async with get_db_connection() as conn:
+            cursor = await conn.execute(
+                "DELETE FROM user_cart WHERE user_id = ?",
+                (user_id,),
+            )
+            await conn.commit()
+            return cursor.rowcount
+
+    @staticmethod
+    async def get_cart_totals(user_id: int) -> Dict[str, float]:
+        cart_items = await Repository.get_user_cart(user_id)
+        total_promo = 0.0
+        total_regular = 0.0
+        for item in cart_items:
+            promo_p = item.get("promo_price") or item.get("original_price") or 0.0
+            orig_p = item.get("original_price") or promo_p
+            total_promo += promo_p
+            total_regular += orig_p
+        savings = max(0.0, total_regular - total_promo)
+        percent = round((savings / total_regular * 100), 1) if total_regular > 0 else 0.0
+        return {
+            "total_promo": round(total_promo, 2),
+            "total_regular": round(total_regular, 2),
+            "savings": round(savings, 2),
+            "saving_percent": percent,
+            "count": len(cart_items),
+        }
+
+    @staticmethod
     async def get_users_for_instant_alert(store_id: str, category_id: str) -> List[Dict[str, Any]]:
         async with get_db_connection() as conn:
             async with conn.execute(

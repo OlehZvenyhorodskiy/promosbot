@@ -71,6 +71,15 @@ CREATE TABLE IF NOT EXISTS user_favorites (
     FOREIGN KEY (promo_id) REFERENCES promos(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS user_cart (
+    user_id INTEGER NOT NULL,
+    promo_id TEXT NOT NULL,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, promo_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (promo_id) REFERENCES promos(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS sent_notifications (
     user_id INTEGER NOT NULL,
     promo_id TEXT NOT NULL,

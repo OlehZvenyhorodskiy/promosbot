@@ -1,7 +1,7 @@
 import logging
 
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, LinkPreviewOptions
+from aiogram.types import Message, CallbackQuery, LinkPreviewOptions, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from src.db.repository import Repository
 from src.i18n.translations import get_text
@@ -11,7 +11,9 @@ from src.bot.keyboards import (
     get_promo_card_keyboard,
     get_store_drilldown_keyboard,
     get_store_detail_keyboard,
+    get_cart_keyboard,
 )
+from src.services.price_comparator import PriceComparator
 from src.bot.message_manager import (
     delete_incoming_message,
     send_top_level_message,
@@ -27,6 +29,7 @@ router = Router()
 PROMOS_BUTTON_TEXTS = ["🔍 Browse Deals", "🔍 Переглянути акції", "🔍 Bekijk Promo's", "🔍 Découvrir les Promos"]
 SEARCH_BUTTON_TEXTS = ["🔎 Search Product", "🔎 Пошук товару", "🔎 Zoek Product", "🔎 Rechercher un Produit"]
 FAVS_BUTTON_TEXTS = ["⭐ Saved Deals", "⭐ Збережені знижки", "⭐ Bewaarde Promo's", "⭐ Promos Enregistrées"]
+CART_BUTTON_TEXTS = ["🛒 Shopping List", "🛒 Список покупок", "🛒 Boodschappenlijst", "🛒 Liste de courses"]
 FOLDERS_BUTTON_TEXTS = ["📰 Folders & Leaflets", "📰 Буклети та брошури", "📰 Folders & Folders", "📰 Dépliants & Catalogues"]
 STORES_BUTTON_TEXTS = ["🏪 Supermarkets", "🏪 Супермаркети", "🏪 Supermarkten", "🏪 Supermarchés"]
 CATEGORIES_BUTTON_TEXTS = ["🏷️ Categories", "🏷️ Категорії", "🏷️ Categorieën", "🏷️ Catégories"]
@@ -38,6 +41,7 @@ ALL_MENU_BUTTONS = (
     PROMOS_BUTTON_TEXTS
     + SEARCH_BUTTON_TEXTS
     + FAVS_BUTTON_TEXTS
+    + CART_BUTTON_TEXTS
     + FOLDERS_BUTTON_TEXTS
     + STORES_BUTTON_TEXTS
     + CATEGORIES_BUTTON_TEXTS
@@ -57,6 +61,7 @@ async def send_or_edit_promo_message(
     user_id = target.from_user.id
     promo_id = promo["id"]
     is_fav = await Repository.is_favorite(user_id, promo_id)
+    is_in_cart = await Repository.is_in_cart(user_id, promo_id)
     store_id = store_id or promo.get("store_id")
     deal_url = promo.get("deal_url")
     image_url = promo.get("image_url")
@@ -66,6 +71,7 @@ async def send_or_edit_promo_message(
         promo_id=promo_id,
         deal_url=deal_url,
         is_fav=is_fav,
+        is_in_cart=is_in_cart,
         current_index=current_index,
         total_count=total_count,
         lang=lang,
@@ -298,16 +304,160 @@ async def handle_fav_toggle(callback: CallbackQuery):
     promo = await Repository.get_promo_by_id(promo_id)
     if promo:
         deal_url = promo.get("deal_url")
+        is_in_cart = await Repository.is_in_cart(user_id, promo_id)
         reply_markup = get_promo_card_keyboard(
             promo_id=promo_id,
             deal_url=deal_url,
             is_fav=is_now_fav,
+            is_in_cart=is_in_cart,
             current_index=0,
             total_count=1,
             lang=lang,
             nav_code="all",
         )
         await safe_edit_reply_markup(callback, reply_markup=reply_markup)
+
+# --- 4b. Shopping List Cart Toggle & Management ---
+@router.callback_query(F.data.startswith("cart:"))
+async def handle_cart_toggle(callback: CallbackQuery):
+    action_val = callback.data.split(":", 1)[1]
+    user_id = callback.from_user.id
+    user = await Repository.get_user(user_id)
+    lang = user.get("language", "en") if user else "en"
+
+    if action_val == "clear":
+        await Repository.clear_user_cart(user_id)
+        await callback.answer(get_text("cart_cleared", lang))
+        await render_user_cart(callback, user_id, lang)
+        return
+
+    promo_id = action_val
+    is_now_in_cart = await Repository.toggle_cart(user_id, promo_id)
+    toast = {
+        "uk": "🛒 Додано до списку покупок!" if is_now_in_cart else "Видалено зі списку покупок.",
+        "nl": "🛒 Toegevoegd aan boodschappenlijst!" if is_now_in_cart else "Verwijderd uit lijst.",
+        "fr": "🛒 Ajouté à la liste de courses !" if is_now_in_cart else "Retiré de la liste.",
+        "en": "🛒 Added to shopping list!" if is_now_in_cart else "Removed from shopping list.",
+    }.get(lang, "🛒 Updated shopping list!")
+    await callback.answer(toast)
+
+    promo = await Repository.get_promo_by_id(promo_id)
+    if promo:
+        is_fav = await Repository.is_favorite(user_id, promo_id)
+        deal_url = promo.get("deal_url")
+        reply_markup = get_promo_card_keyboard(
+            promo_id=promo_id,
+            deal_url=deal_url,
+            is_fav=is_fav,
+            is_in_cart=is_now_in_cart,
+            current_index=0,
+            total_count=1,
+            lang=lang,
+            nav_code="all",
+        )
+        await safe_edit_reply_markup(callback, reply_markup=reply_markup)
+
+@router.callback_query(F.data.startswith("crm:"))
+async def handle_cart_remove(callback: CallbackQuery):
+    promo_id = callback.data.split(":", 1)[1]
+    user_id = callback.from_user.id
+    user = await Repository.get_user(user_id)
+    lang = user.get("language", "en") if user else "en"
+
+    await Repository.toggle_cart(user_id, promo_id)
+    await callback.answer()
+    await render_user_cart(callback, user_id, lang)
+
+@router.message(Command("cart"))
+@router.message(Command("list"))
+@router.message(F.text.in_(CART_BUTTON_TEXTS))
+async def handle_cart_view(message: Message):
+    user_id = message.from_user.id
+    user = await Repository.get_or_create_user(user_id, message.from_user.username, message.from_user.first_name)
+    lang = user.get("language", "en")
+    await render_user_cart(message, user_id, lang)
+
+@router.callback_query(F.data == "nav:cart")
+async def handle_nav_cart(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    user = await Repository.get_user(user_id)
+    lang = user.get("language", "en") if user else "en"
+    await callback.answer()
+    await render_user_cart(callback, user_id, lang)
+
+async def render_user_cart(target: Message | CallbackQuery, user_id: int, lang: str):
+    cart_items = await Repository.get_user_cart(user_id)
+    if not cart_items:
+        empty_text = get_text("cart_empty", lang)
+        kb = InlineKeyboardMarkup(
+            inline_keyboard=[[InlineKeyboardButton(text=get_text("btn_back_stores", lang), callback_data="nav:browse_stores")]]
+        )
+        if isinstance(target, CallbackQuery):
+            await safe_edit_text(target, empty_text, reply_markup=kb, parse_mode="HTML")
+        else:
+            await delete_incoming_message(target)
+            await send_top_level_message(target, empty_text, reply_markup=kb, parse_mode="HTML")
+        return
+
+    totals = await Repository.get_cart_totals(user_id)
+    title_header = get_text("cart_title", lang)
+    lines = [f"{title_header} ({totals['count']}):\n"]
+
+    for item in cart_items:
+        st_id = item.get("store_id", "")
+        st_info = SUPERMARKETS.get(st_id, {"name": st_id.title(), "emoji": "🏪"})
+        p_price = item.get("promo_price") or item.get("original_price") or 0.0
+        o_price = item.get("original_price")
+        price_str = f"€{p_price:.2f}"
+        if o_price and o_price > p_price:
+            price_str += f" (<s>€{o_price:.2f}</s>)"
+        lines.append(f"• {st_info['emoji']} <b>{st_info['name']}</b>: {item.get('title')} — <b>{price_str}</b>")
+
+    lines.append("\n━━━━━━━━━━━━━━━━━━")
+    lines.append(f"💰 <b>{get_text('cart_total_label', lang)}: €{totals['total_promo']:.2f}</b>")
+    lines.append(f"🎉 <b>{get_text('cart_saved_label', lang)}: €{totals['savings']:.2f} (-{totals['saving_percent']}%)</b>")
+
+    cart_text = "\n".join(lines)
+    keyboard = get_cart_keyboard(cart_items, lang)
+
+    if isinstance(target, CallbackQuery):
+        await safe_edit_text(target, cart_text, reply_markup=keyboard, parse_mode="HTML")
+    else:
+        await delete_incoming_message(target)
+        await send_top_level_message(target, cart_text, reply_markup=keyboard, parse_mode="HTML")
+
+# --- 4c. Smart Price Comparison Callback ---
+@router.callback_query(F.data.startswith("cmp:"))
+async def handle_price_compare(callback: CallbackQuery):
+    promo_id = callback.data.split(":", 1)[1]
+    user_id = callback.from_user.id
+    user = await Repository.get_user(user_id)
+    lang = user.get("language", "en") if user else "en"
+
+    promo = await Repository.get_promo_by_id(promo_id)
+    if not promo:
+        await callback.answer("Deal not found")
+        return
+
+    competitors = await PriceComparator.find_competitor_prices(promo)
+    if not competitors:
+        no_comp_msg = {
+            "uk": "🔍 Зараз немає активних акцій на схожі товари в інших магазинах.",
+            "nl": "🔍 Geen vergelijkbare acties gevonden bij andere winkels.",
+            "fr": "🔍 Aucune offre concurrente trouvée pour le moment.",
+            "en": "🔍 No competitor deals found in other supermarkets right now.",
+        }.get(lang, "No competitor deals found.")
+        await callback.answer(no_comp_msg, show_alert=True)
+        return
+
+    await callback.answer()
+    cmp_text = PriceComparator.format_comparison_message(promo, competitors, lang)
+    back_kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="⬅️ " + get_text("btn_back_stores", lang), callback_data="nav:browse_stores")],
+        ]
+    )
+    await safe_edit_text(callback, cmp_text, reply_markup=back_kb, parse_mode="HTML")
 
 # --- 5. Favorites View ---
 @router.message(Command("favorites"))
