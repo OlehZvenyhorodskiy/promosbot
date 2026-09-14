@@ -23,19 +23,26 @@ Cloud Run provides generous free tier allocations (2 million requests/month, 360
    gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/belgium-promos-bot
    ```
 
-2. **Deploy directly in Belgium (`europe-west1`)**:
+2. **Store secrets in Google Secret Manager**:
+   ```bash
+   echo -n "YOUR_NEW_BOT_TOKEN" | gcloud secrets create bot-token --data-file=-
+   echo -n "RANDOM_API_SECRET_KEY" | gcloud secrets create api-secret --data-file=-
+   ```
+
+3. **Deploy directly in Belgium (`europe-west1`)**:
    ```bash
    gcloud run deploy belgium-promos-bot \
      --image gcr.io/YOUR_PROJECT_ID/belgium-promos-bot \
      --platform managed \
      --region europe-west1 \
      --allow-unauthenticated \
-     --set-env-vars BOT_TOKEN="YOUR_BOT_TOKEN",PORT="8080",KEEP_ALIVE_URL="https://YOUR_SERVICE_URL/ping" \
+     --set-secrets BOT_TOKEN=bot-token:latest,API_SECRET=api-secret:latest \
+     --set-env-vars PORT="8080",KEEP_ALIVE_URL="https://YOUR_SERVICE_URL/ping" \
      --min-instances 1 \
      --memory 512Mi
    ```
 
-   *Setting `--min-instances 1` keeps the instance active so Telegram long-polling stays connected without sleep latency.*
+   *Setting `--min-instances 1` keeps the instance active so Telegram long-polling stays connected without sleep latency. Inbound `/api/v1/*` endpoints are protected by `API_SECRET` (pass via `X-API-Key` or `Authorization: Bearer <token>`).*
 
 ---
 

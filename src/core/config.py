@@ -16,5 +16,6 @@ class Settings(BaseModel):
     DIGEST_CHECK_INTERVAL_MINUTES: int = int(os.getenv("DIGEST_CHECK_INTERVAL_MINUTES", "15"))
     ALERT_BATCH_INTERVAL_MINUTES: int = int(os.getenv("ALERT_BATCH_INTERVAL_MINUTES", "10"))
     KEEP_ALIVE_URL: str = os.getenv("KEEP_ALIVE_URL", "")
+    API_SECRET: str = os.getenv("API_SECRET", "")
 
 settings = Settings()

@@ -57,6 +57,29 @@ async def test_web_server(aiohttp_client):
         data = await resp.json()
         assert data["success"] is True
         assert data["items_parsed"] >= 1
+
+        # Test auth protection when API_SECRET is set
+        settings.API_SECRET = "supersecret123"
+        # Should fail without header
+        resp_unauth = await client.post("/api/v1/inbound-promo", json=promo_payload)
+        assert resp_unauth.status == 401
+
+        # Should fail with wrong header
+        resp_wrong = await client.post(
+            "/api/v1/inbound-promo",
+            json=promo_payload,
+            headers={"X-API-Key": "wrong"},
+        )
+        assert resp_wrong.status == 401
+
+        # Should succeed with correct Bearer header
+        resp_auth = await client.post(
+            "/api/v1/inbound-promo",
+            json=promo_payload,
+            headers={"Authorization": "Bearer supersecret123"},
+        )
+        assert resp_auth.status == 200
     finally:
+        settings.API_SECRET = ""
         if os.path.exists(db_file):
             os.remove(db_file)

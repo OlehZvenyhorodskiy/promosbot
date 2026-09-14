@@ -1,7 +1,8 @@
 import logging
 from datetime import datetime
-
 from aiohttp import web
+
+from src.core.config import settings
 from src.db.repository import Repository
 from src.scrapers.engine import ScraperEngine
 from src.services.scheduler import NotificationDispatcher
@@ -9,8 +10,24 @@ from src.services.gemini_folder_parser import GeminiFolderParser
 
 logger = logging.getLogger(__name__)
 
+@web.middleware
+async def auth_middleware(request: web.Request, handler):
+    if request.path.startswith("/api/v1/"):
+        secret = settings.API_SECRET
+        if secret:
+            provided = request.headers.get("X-API-Key")
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                provided = auth_header[7:].strip()
+            if not provided or provided != secret:
+                return web.json_response(
+                    {"error": "Unauthorized: Invalid or missing API secret key."},
+                    status=401,
+                )
+    return await handler(request)
+
 def create_web_app(engine: ScraperEngine, dispatcher: NotificationDispatcher) -> web.Application:
-    app = web.Application()
+    app = web.Application(middlewares=[auth_middleware])
     gemini_parser = GeminiFolderParser()
 
     async def handle_root(request: web.Request) -> web.Response:
