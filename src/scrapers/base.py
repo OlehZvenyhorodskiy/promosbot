@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 import re
 import hashlib
 from src.scrapers.models import PromoItem
