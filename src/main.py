@@ -3,7 +3,7 @@ import logging
 import signal
 import sys
 from aiogram import Bot, Dispatcher
-from aiogram.types import BotCommand, MenuButtonDefault
+from aiogram.types import BotCommand, MenuButtonCommands
 from aiohttp import web
 
 from src.core.config import settings
@@ -37,7 +37,8 @@ async def setup_bot_commands(bot: Bot):
     ]
     try:
         await bot.set_my_commands(commands)
-        logger.info("Bot commands menu registered with Telegram.")
+        await bot.set_chat_menu_button(menu_button=MenuButtonCommands())
+        logger.info("Bot commands menu and MenuButtonCommands registered with Telegram.")
     except Exception as e:
         logger.warning(f"Could not register bot commands: {e}")
 
