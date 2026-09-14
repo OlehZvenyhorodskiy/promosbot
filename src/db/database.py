@@ -150,4 +150,61 @@ async def init_db():
             "CREATE INDEX IF NOT EXISTS idx_promos_store_category ON promos(store_id, category_id)"
         )
 
+        # FTS5 full-text index over promo title/description (external content
+        # mode). This lives in the migration path rather than SCHEMA_SQL so that
+        # databases created before FTS support also gain the index on startup.
+        async with conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='promos_fts'"
+        ) as cursor:
+            fts_existed = (await cursor.fetchone()) is not None
+
+        await conn.execute(
+            """
+            CREATE VIRTUAL TABLE IF NOT EXISTS promos_fts USING fts5(
+                title, description,
+                content='promos',
+                content_rowid='rowid',
+                tokenize='porter unicode61'
+            )
+            """
+        )
+        # Keep the external-content index in sync with the promos table. The
+        # upsert path uses ON CONFLICT(id) DO UPDATE, which fires the AFTER
+        # UPDATE trigger (verified by tests/test_fts_search.py), so a single
+        # promo never leaves duplicate FTS rows.
+        await conn.execute(
+            """
+            CREATE TRIGGER IF NOT EXISTS promos_fts_ai AFTER INSERT ON promos BEGIN
+                INSERT INTO promos_fts(rowid, title, description)
+                VALUES (new.rowid, new.title, new.description);
+            END
+            """
+        )
+        await conn.execute(
+            """
+            CREATE TRIGGER IF NOT EXISTS promos_fts_ad AFTER DELETE ON promos BEGIN
+                INSERT INTO promos_fts(promos_fts, rowid, title, description)
+                VALUES ('delete', old.rowid, old.title, old.description);
+            END
+            """
+        )
+        await conn.execute(
+            """
+            CREATE TRIGGER IF NOT EXISTS promos_fts_au AFTER UPDATE ON promos BEGIN
+                INSERT INTO promos_fts(promos_fts, rowid, title, description)
+                VALUES ('delete', old.rowid, old.title, old.description);
+                INSERT INTO promos_fts(rowid, title, description)
+                VALUES (new.rowid, new.title, new.description);
+            END
+            """
+        )
+
+        if not fts_existed:
+            # Backfill the index for databases that already contained promos
+            # before FTS support was introduced.
+            async with conn.execute("SELECT COUNT(*) AS cnt FROM promos") as cursor:
+                promo_count = (await cursor.fetchone())["cnt"]
+            if promo_count > 0:
+                await conn.execute("INSERT INTO promos_fts(promos_fts) VALUES('rebuild')")
+
         await conn.commit()

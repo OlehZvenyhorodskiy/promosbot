@@ -5,6 +5,29 @@ from src.core.constants import SUPERMARKETS, CATEGORIES, DEFAULT_LANGUAGE
 from src.services.search_service import expand_search_terms
 from src.scrapers.base import generate_fingerprint
 
+
+def _fts_phrase(term: str) -> str:
+    """Build an FTS5 phrase query for a single search term.
+
+    Terms are wrapped in double quotes so spaces, apostrophes and hyphens are
+    treated literally. A double quote inside a term is escaped by doubling it,
+    per the FTS5 phrase syntax.
+    """
+    escaped = term.replace('"', '""')
+    # Short terms and terms containing non-letter characters (spaces,
+    # apostrophes, hyphens, digits) use a phrase-prefix query so they keep
+    # matching substrings that the previous LIKE search found (e.g. "cote d'or",
+    # "lay's", "3e"). Plain words rely on token + porter stemming matching.
+    if len(term) <= 3 or not term.isalpha():
+        return f'"{escaped}"*'
+    return f'"{escaped}"'
+
+
+def _fts_match_expression(terms: List[str]) -> str:
+    """Combine expanded search terms into one FTS5 MATCH expression."""
+    return " OR ".join(_fts_phrase(term) for term in terms)
+
+
 PROMO_UPSERT_SQL = """
 INSERT INTO promos (
     id, store_id, external_id, fingerprint, title, description, original_price, promo_price,
@@ -352,13 +375,14 @@ class Repository:
 
             if search_query:
                 # Multilingual search term expansion
-                terms = expand_search_terms(search_query)
-                term_clauses = []
-                for t in terms:
-                    term_clauses.append("(title LIKE ? OR description LIKE ?)")
-                    like_term = f"%{t}%"
-                    params.extend([like_term, like_term])
-                query += f" AND ({' OR '.join(term_clauses)})"
+                terms = [t for t in expand_search_terms(search_query) if t.strip()]
+                if terms:
+                    query += (
+                        " AND rowid IN ("
+                        "SELECT rowid FROM promos_fts WHERE promos_fts MATCH ?"
+                        ")"
+                    )
+                    params.append(_fts_match_expression(terms))
 
             query += " ORDER BY updated_at DESC, created_at DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
@@ -388,13 +412,14 @@ class Repository:
                 params.extend(category_ids)
 
             if search_query:
-                terms = expand_search_terms(search_query)
-                term_clauses = []
-                for t in terms:
-                    term_clauses.append("(title LIKE ? OR description LIKE ?)")
-                    like_term = f"%{t}%"
-                    params.extend([like_term, like_term])
-                query += f" AND ({' OR '.join(term_clauses)})"
+                terms = [t for t in expand_search_terms(search_query) if t.strip()]
+                if terms:
+                    query += (
+                        " AND rowid IN ("
+                        "SELECT rowid FROM promos_fts WHERE promos_fts MATCH ?"
+                        ")"
+                    )
+                    params.append(_fts_match_expression(terms))
 
             async with conn.execute(query, params) as cursor:
                 row = await cursor.fetchone()
