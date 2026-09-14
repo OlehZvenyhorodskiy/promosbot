@@ -31,6 +31,23 @@ NON_PRODUCT_TITLES = {
     "filters",
     "aanmelden",
     "inloggen",
+    # Retailer names parsed from navigation/branding blocks are store
+    # chrome, never actual promo products.
+    "spar",
+    "mijn spar",
+    "jumbo",
+    "cora",
+    "carrefour",
+    "colruyt",
+    "aldi",
+    "lidl",
+    "action",
+    "okay",
+    "kruidvat",
+    "bioplanet",
+    "bio-planet",
+    "albert heijn",
+    "intermarche",
 }
 
 
