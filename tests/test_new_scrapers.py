@@ -11,7 +11,7 @@ from src.bot.formatters import format_promo_card
 
 def test_store_config_definitions():
     stores = StoreConfig.get_all()
-    assert len(stores) >= 14
+    assert len(stores) >= 13
     store_ids = {s.id for s in stores}
     assert "action" in store_ids
     assert "kruidvat" in store_ids

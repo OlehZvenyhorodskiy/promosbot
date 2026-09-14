@@ -46,7 +46,7 @@ class LeafletOrchestrator:
                 all_items.extend(res)
 
         # 2. Tiendeo aggregator deals
-        tiendeo_stores = list(self.publitas_extractors.keys()) + ["action", "delhaize", "lidl", "spar", "cora", "intermarche", "bioplanet"]
+        tiendeo_stores = list(self.publitas_extractors.keys()) + ["action", "delhaize", "lidl", "spar", "intermarche", "bioplanet"]
         tiendeo_tasks = [
             self._fetch_tiendeo_safe(store_id)
             for store_id in set(tiendeo_stores)

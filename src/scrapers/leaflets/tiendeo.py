@@ -21,7 +21,6 @@ RETAILER_MAPPING = {
     "albertheijn": "albert_heijn",
     "jumbo": "jumbo",
     "spar": "spar",
-    "cora": "cora",
     "intermarche": "intermarche",
     "action": "action",
     "kruidvat": "kruidvat",

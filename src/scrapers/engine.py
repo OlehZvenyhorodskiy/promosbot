@@ -48,7 +48,6 @@ class ScraperEngine:
             GenericRetailerScraper("albert_heijn", "Albert Heijn", SUPERMARKETS["albert_heijn"]["url"]),
             GenericRetailerScraper("jumbo", "Jumbo", SUPERMARKETS["jumbo"]["url"]),
             GenericRetailerScraper("spar", "Spar", SUPERMARKETS["spar"]["url"]),
-            GenericRetailerScraper("cora", "Cora", SUPERMARKETS["cora"]["url"]),
             GenericRetailerScraper("intermarche", "Intermarché", SUPERMARKETS["intermarche"]["url"]),
         ]
         self.circuit_breakers: Dict[str, CircuitBreaker] = {

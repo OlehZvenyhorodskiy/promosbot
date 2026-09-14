@@ -6,7 +6,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "welcome_title": "🇧🇪 <b>Welcome to Belgium Promo's!</b>",
         "welcome_body": (
             "Never miss a discount in Belgian supermarkets.\n\n"
-            "I track promotions and weekly folders across <b>Colruyt, Carrefour, Delhaize, Aldi, Lidl, Albert Heijn, Jumbo, Spar, Cora, Intermarché, Action, Kruidvat, OKay, and Bio-Planet</b>.\n\n"
+            "I track promotions and weekly folders across <b>Colruyt, Carrefour, Delhaize, Aldi, Lidl, Albert Heijn, Jumbo, Spar, Intermarché, Action, Kruidvat, OKay, and Bio-Planet</b>.\n\n"
             "Choose your language below to personalize your experience:"
         ),
         "main_hub_title": "🇧🇪 <b>Belgium Promo's Hub</b>",
@@ -89,7 +89,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "welcome_title": "🇧🇪 <b>Ласкаво просимо до Belgium Promo's!</b>",
         "welcome_body": (
             "Більше жодної пропущеної знижки в найбільших супермаркетах Бельгії.\n\n"
-            "Я відстежую щотижневі брошури та акції в <b>Colruyt, Carrefour, Delhaize, Aldi, Lidl, Albert Heijn, Jumbo, Spar, Cora, Intermarché, Action, Kruidvat, OKay та Bio-Planet</b>.\n\n"
+            "Я відстежую щотижневі брошури та акції в <b>Colruyt, Carrefour, Delhaize, Aldi, Lidl, Albert Heijn, Jumbo, Spar, Intermarché, Action, Kruidvat, OKay та Bio-Planet</b>.\n\n"
             "Оберіть мову інтерфейсу нижче для продовження:"
         ),
         "main_hub_title": "🇧🇪 <b>Головне меню Belgium Promo's</b>",
@@ -172,7 +172,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "welcome_title": "🇧🇪 <b>Welkom bij Belgium Promo's!</b>",
         "welcome_body": (
             "Mis nooit meer een promotie of folder in Belgische supermarkten.\n\n"
-            "Ik volg acties en folders op bij <b>Colruyt, Carrefour, Delhaize, Aldi, Lidl, Albert Heijn, Jumbo, Spar, Cora, Intermarché, Action, Kruidvat, OKay en Bio-Planet</b>.\n\n"
+            "Ik volg acties en folders op bij <b>Colruyt, Carrefour, Delhaize, Aldi, Lidl, Albert Heijn, Jumbo, Spar, Intermarché, Action, Kruidvat, OKay en Bio-Planet</b>.\n\n"
             "Kies hieronder uw voorkeurstaal om te beginnen:"
         ),
         "main_hub_title": "🇧🇪 <b>Belgium Promo's Hub</b>",
@@ -255,7 +255,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "welcome_title": "🇧🇪 <b>Bienvenue sur Belgium Promo's !</b>",
         "welcome_body": (
             "Ne manquez plus aucune promotion ni dépliant en Belgique.\n\n"
-            "Je surveille les réductions et catalogues chez <b>Colruyt, Carrefour, Delhaize, Aldi, Lidl, Albert Heijn, Jumbo, Spar, Cora, Intermarché, Action, Kruidvat, OKay et Bio-Planet</b>.\n\n"
+            "Je surveille les réductions et catalogues chez <b>Colruyt, Carrefour, Delhaize, Aldi, Lidl, Albert Heijn, Jumbo, Spar, Intermarché, Action, Kruidvat, OKay et Bio-Planet</b>.\n\n"
             "Choisissez votre langue ci-dessous pour commencer :"
         ),
         "main_hub_title": "🇧🇪 <b>Menu Principal Belgium Promo's</b>",

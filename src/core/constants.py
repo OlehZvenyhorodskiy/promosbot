@@ -83,15 +83,6 @@ SUPERMARKETS: Dict[str, Dict[str, Any]] = {
         "color": "#007A3D",
         "loyalty_card": None,
     },
-    "cora": {
-        "id": "cora",
-        "name": "Cora",
-        "emoji": "🟣",
-        "url": "https://www.cora.be/fr/promotions",
-        "folder_url": "https://www.cora.be/fr/catalogues",
-        "color": "#7B1FA2",
-        "loyalty_card": "Carte cora",
-    },
     "intermarche": {
         "id": "intermarche",
         "name": "Intermarché",
