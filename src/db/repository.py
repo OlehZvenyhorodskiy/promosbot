@@ -8,8 +8,9 @@ from src.scrapers.base import generate_fingerprint
 PROMO_UPSERT_SQL = """
 INSERT INTO promos (
     id, store_id, external_id, fingerprint, title, description, original_price, promo_price,
-    discount_text, unit_info, image_url, deal_url, category_id, valid_from, valid_until, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    discount_text, unit_info, image_url, deal_url, category_id, valid_from, valid_until,
+    source_type, leaflet_id, page_number, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 ON CONFLICT(id) DO UPDATE SET
     fingerprint = COALESCE(excluded.fingerprint, promos.fingerprint),
     title = excluded.title,
@@ -23,6 +24,9 @@ ON CONFLICT(id) DO UPDATE SET
     category_id = excluded.category_id,
     valid_from = excluded.valid_from,
     valid_until = excluded.valid_until,
+    source_type = COALESCE(excluded.source_type, promos.source_type),
+    leaflet_id = COALESCE(excluded.leaflet_id, promos.leaflet_id),
+    page_number = COALESCE(excluded.page_number, promos.page_number),
     updated_at = CURRENT_TIMESTAMP
 """
 
@@ -237,6 +241,9 @@ class Repository:
                     promo_data.get("category_id", "pantry"),
                     promo_data.get("valid_from", ""),
                     promo_data.get("valid_until", ""),
+                    promo_data.get("source_type", "web"),
+                    promo_data.get("leaflet_id"),
+                    promo_data.get("page_number"),
                 ),
             )
             await conn.commit()
@@ -308,6 +315,9 @@ class Repository:
                         data.get("category_id", "pantry"),
                         data.get("valid_from", ""),
                         data.get("valid_until", ""),
+                        data.get("source_type", "web"),
+                        data.get("leaflet_id"),
+                        data.get("page_number"),
                     )
                 )
 

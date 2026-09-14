@@ -135,19 +135,22 @@ def get_store_detail_keyboard(
 
 def get_folders_keyboard(lang: str = "en") -> InlineKeyboardMarkup:
     rows = []
-    buttons = []
     for store_id, info in SUPERMARKETS.items():
         f_url = info.get("folder_url")
+        row = [
+            InlineKeyboardButton(
+                text=f"{info['emoji']} {info['name']}",
+                callback_data=f"fld:{store_id}",
+            )
+        ]
         if f_url:
-            buttons.append(
+            row.append(
                 InlineKeyboardButton(
-                    text=f"{info['emoji']} {info['name']}",
+                    text="🌐 Web",
                     url=f_url,
                 )
             )
-
-    for i in range(0, len(buttons), 2):
-        rows.append(buttons[i : i + 2])
+        rows.append(row)
 
     # General Belgian folder aggregator
     rows.append([
