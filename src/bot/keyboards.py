@@ -1,4 +1,5 @@
-from typing import Set, Optional, Dict
+from __future__ import annotations
+from typing import Set, Optional, Dict, List, Any
 from aiogram.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
