@@ -6,6 +6,11 @@ from src.scrapers.base import BaseScraper
 from src.scrapers.aldi import AldiScraper
 from src.scrapers.colruyt import ColruytScraper
 from src.scrapers.carrefour import CarrefourScraper
+from src.scrapers.delhaize import DelhaizeScraper
+from src.scrapers.lidl import LidlScraper
+from src.scrapers.action import ActionScraper
+from src.scrapers.kruidvat import KruidvatScraper
+from src.scrapers.okay import OkayScraper
 from src.scrapers.generic import GenericRetailerScraper
 from src.scrapers.browser import BrowserRetailerScraper
 from src.core.constants import SUPERMARKETS
@@ -23,8 +28,12 @@ class ScraperEngine:
             AldiScraper(),
             ColruytScraper(),
             CarrefourScraper(),
-            GenericRetailerScraper("delhaize", "Delhaize", SUPERMARKETS["delhaize"]["url"]),
-            GenericRetailerScraper("lidl", "Lidl", SUPERMARKETS["lidl"]["url"], ssl_verify=False),
+            DelhaizeScraper(),
+            LidlScraper(),
+            ActionScraper(),
+            KruidvatScraper(),
+            OkayScraper(),
+            GenericRetailerScraper("bioplanet", "Bio-Planet", SUPERMARKETS["bioplanet"]["url"]),
             GenericRetailerScraper("albert_heijn", "Albert Heijn", SUPERMARKETS["albert_heijn"]["url"]),
             GenericRetailerScraper("jumbo", "Jumbo", SUPERMARKETS["jumbo"]["url"]),
             GenericRetailerScraper("spar", "Spar", SUPERMARKETS["spar"]["url"]),

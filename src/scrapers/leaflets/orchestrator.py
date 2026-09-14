@@ -20,6 +20,8 @@ class LeafletOrchestrator:
             "aldi": PublitasLeafletExtractor("aldi", "aldi-belgie"),
             "jumbo": PublitasLeafletExtractor("jumbo", "jumbo-belgie"),
             "colruyt": PublitasLeafletExtractor("colruyt", "colruyt"),
+            "kruidvat": PublitasLeafletExtractor("kruidvat", "kruidvat-belgie"),
+            "okay": PublitasLeafletExtractor("okay", "okay"),
         }
         self.tiendeo = TiendeoAggregator()
         self.pdf_extractor = PDFLeafletExtractor()
@@ -39,9 +41,10 @@ class LeafletOrchestrator:
                 all_items.extend(res)
 
         # 2. Tiendeo aggregator deals
+        tiendeo_stores = list(self.publitas_extractors.keys()) + ["action", "delhaize", "lidl", "spar", "cora", "intermarche", "bioplanet"]
         tiendeo_tasks = [
             self._fetch_tiendeo_safe(store_id)
-            for store_id in self.publitas_extractors.keys()
+            for store_id in set(tiendeo_stores)
         ]
         tiendeo_results = await asyncio.gather(*tiendeo_tasks, return_exceptions=True)
         for res in tiendeo_results:

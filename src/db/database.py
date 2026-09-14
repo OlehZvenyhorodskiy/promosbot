@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS promos (
     source_type TEXT DEFAULT 'web',
     leaflet_id TEXT,
     page_number INTEGER,
+    loyalty_card TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -129,6 +130,8 @@ async def init_db():
             await conn.execute("ALTER TABLE promos ADD COLUMN leaflet_id TEXT")
         if "page_number" not in promo_columns:
             await conn.execute("ALTER TABLE promos ADD COLUMN page_number INTEGER")
+        if "loyalty_card" not in promo_columns:
+            await conn.execute("ALTER TABLE promos ADD COLUMN loyalty_card TEXT")
         await conn.execute(
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_promos_fingerprint ON promos(fingerprint)"
         )

@@ -90,6 +90,16 @@ def format_promo_card(promo: Dict[str, Any], lang: str = "en", is_fav: bool = Fa
         else:
                 lines.append("🔥 <b>Promo Price</b>")
 
+    loyalty_card = promo.get("loyalty_card")
+    if loyalty_card:
+        card_label = {
+            "uk": f"💳 <i>З карткою {loyalty_card}</i>",
+            "nl": f"💳 <i>Met {loyalty_card}</i>",
+            "fr": f"💳 <i>Avec la carte {loyalty_card}</i>",
+            "en": f"💳 <i>With {loyalty_card}</i>",
+        }.get(lang, f"💳 <i>With {loyalty_card}</i>")
+        lines.append(card_label)
+
     if valid_until:
         until_label = get_text("valid_until", lang)
         lines.append(f"📅 {until_label}: <code>{valid_until}</code>")
