@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime
 from aiohttp import web
@@ -135,9 +136,32 @@ def create_web_app(engine: ScraperEngine, dispatcher: NotificationDispatcher) ->
             logger.error(f"Error parsing flyer: {e}")
             return web.json_response({"error": str(e)}, status=500)
 
+    async def handle_scrapers_health(request: web.Request) -> web.Response:
+        statuses = engine.get_health_status()
+        counts = await Repository.get_promo_counts_by_store()
+        for st in statuses:
+            st["deals_in_catalog"] = counts.get(st["store_id"], 0)
+        return web.json_response({
+            "status": "ok",
+            "total_stores": len(statuses),
+            "scrapers": statuses,
+            "timestamp": datetime.now().isoformat(),
+        })
+
+    async def handle_trigger_scrape(request: web.Request) -> web.Response:
+        store = request.query.get("store")
+        if store:
+            asyncio.create_task(engine.run_store_scraper(store))
+            return web.json_response({"success": True, "message": f"Scrape triggered for {store}"})
+        else:
+            asyncio.create_task(engine.run_all_scrapers())
+            return web.json_response({"success": True, "message": "Global scrape triggered in background"})
+
     app.router.add_get("/", handle_root)
     app.router.add_get("/health", handle_health)
     app.router.add_get("/ping", handle_ping)
+    app.router.add_get("/api/v1/health/scrapers", handle_scrapers_health)
+    app.router.add_post("/api/v1/scrape/trigger", handle_trigger_scrape)
     app.router.add_post("/api/v1/inbound-promo", handle_inbound_promo)
     app.router.add_post("/api/v1/inbound-newsletter", handle_inbound_newsletter)
     app.router.add_post("/api/v1/parse-folder", handle_parse_folder)
