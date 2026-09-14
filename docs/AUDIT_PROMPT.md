@@ -1,6 +1,6 @@
 # Інструкція та готовий промпт для незалежного аудиту репозиторію
 
-Цей документ містить прямі посилання на актуальний стан коду (коміт 1d70dd2) та готовий промпт для зовнішніх ШІ-моделей (Claude, ChatGPT тощо) для перевірки стійкості скрапінгу, обходу рейт-лімітів та архітектури.
+Цей документ містить прямі посилання на актуальний стан коду (коміт 2efe874) та готовий промпт для зовнішніх ШІ-моделей (Claude, ChatGPT тощо) для перевірки стійкості скрапінгу, обходу рейт-лімітів та архітектури.
 
 ---
 
@@ -8,60 +8,60 @@
 
 Репозиторій: [https://github.com/OlehZvenyhorodskiy/promosbot](https://github.com/OlehZvenyhorodskiy/promosbot)
 Гілка: main
-Останній коміт: [1d70dd2](https://github.com/OlehZvenyhorodskiy/promosbot/commit/1d70dd2)
-Пряме посилання на дерево коду: [https://github.com/OlehZvenyhorodskiy/promosbot/tree/1d70dd2](https://github.com/OlehZvenyhorodskiy/promosbot/tree/1d70dd2)
+Останній коміт: [main](https://github.com/OlehZvenyhorodskiy/promosbot/commit/main)
+Пряме посилання на дерево коду: [https://github.com/OlehZvenyhorodskiy/promosbot/tree/main](https://github.com/OlehZvenyhorodskiy/promosbot/tree/main)
 
 ### Прямі посилання на ключові файли:
 
-1. [src/scrapers/engine.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/1d70dd2/src/scrapers/engine.py)
-   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/engine.py)
+1. [src/scrapers/engine.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/main/src/scrapers/engine.py)
+   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/engine.py)
    Інтеграція семафора обмеження конкурентності (max_concurrency=3), по-доменного RateLimiter (Token Bucket), повторних спроб async_retry та автоматичних CircuitBreaker.
 
-2. [src/scrapers/base.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/1d70dd2/src/scrapers/base.py)
-   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/base.py)
+2. [src/scrapers/base.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/main/src/scrapers/base.py)
+   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/base.py)
    Детермінований розрахунок SHA-256 fingerprint, функція нормалізації назв, безпечний SSL-контекст certifi через get_ssl_context.
 
-3. [src/scrapers/lidl.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/1d70dd2/src/scrapers/lidl.py)
-   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/lidl.py)
+3. [src/scrapers/lidl.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/main/src/scrapers/lidl.py)
+   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/lidl.py)
    Обхід ліміту заголовків Akamai через max_field_size=65536 та max_line_size=65536, декомпресія Brotli (Accept-Encoding br), перевірений SSL через certifi, картка Lidl Plus, фолбек на буклети.
 
-4. [src/scrapers/colruyt.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/1d70dd2/src/scrapers/colruyt.py)
-   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/colruyt.py)
+4. [src/scrapers/colruyt.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/main/src/scrapers/colruyt.py)
+   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/colruyt.py)
    Робота через Colruyt Search API, картка Xtra, фолбек на HTML-картки та цифрові буклети Publitas, дедуплікація за fingerprint.
 
-5. [src/scrapers/carrefour.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/1d70dd2/src/scrapers/carrefour.py)
-   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/carrefour.py)
+5. [src/scrapers/carrefour.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/main/src/scrapers/carrefour.py)
+   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/carrefour.py)
    Client Hints (sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform) для проходження WAF, парсинг структурованих даних JSON-LD (Product та ItemList), картка Bonus Card, фолбек на буклети.
 
-6. [src/scrapers/kruidvat.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/1d70dd2/src/scrapers/kruidvat.py)
-   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/kruidvat.py)
+6. [src/scrapers/kruidvat.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/main/src/scrapers/kruidvat.py)
+   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/kruidvat.py)
    Hybris REST API з пагінацією до 300 товарів (pageSize=100, 3 сторінки), збереження зворотної сумісності через аліас parse_json_api, картка Kruidvat Club, certifi SSL.
 
-7. [src/scrapers/action.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/1d70dd2/src/scrapers/action.py)
-   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/action.py)
+7. [src/scrapers/action.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/main/src/scrapers/action.py)
+   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/action.py)
    Трирівневий збір: прямий HTML з парсингом __NEXT_DATA__, фолбек на цифрові буклети Publitas та агрегатор Tiendeo.
 
-8. [src/utils/rate_limiter.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/1d70dd2/src/utils/rate_limiter.py)
-   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/utils/rate_limiter.py)
+8. [src/utils/rate_limiter.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/main/src/utils/rate_limiter.py)
+   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/utils/rate_limiter.py)
    Асинхронний алгоритм Token Bucket (RateLimiter) та ізольований менеджер лімітів за доменами (PerDomainRateLimiter).
 
-9. [src/utils/retry.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/1d70dd2/src/utils/retry.py)
-   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/utils/retry.py)
+9. [src/utils/retry.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/main/src/utils/retry.py)
+   (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/utils/retry.py)
    Модуль безпечних повторів async_retry з експоненційним бекофом і джитер-рандомізацією для мережевих помилок.
 
-10. [src/utils/circuit_breaker.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/1d70dd2/src/utils/circuit_breaker.py)
-    (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/utils/circuit_breaker.py)
+10. [src/utils/circuit_breaker.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/main/src/utils/circuit_breaker.py)
+    (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/utils/circuit_breaker.py)
     Захист від каскадних падінь зі станами CLOSED, OPEN, HALF_OPEN і тайм-аутом відновлення.
 
-11. [src/main.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/1d70dd2/src/main.py)
-    (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/main.py)
+11. [src/main.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/main/src/main.py)
+    (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/main.py)
     Коректна обробка сигналів SIGTERM і SIGINT для безпечної зупинки сервісу в контейнерах Cloud Run без пошкодження даних.
 
-12. [src/web/server.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/1d70dd2/src/web/server.py)
-    (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/web/server.py)
+12. [src/web/server.py](https://github.com/OlehZvenyhorodskiy/promosbot/blob/main/src/web/server.py)
+    (Raw: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/web/server.py)
     Ендпоінти моніторингу стану сервісу: /api/v1/health/scrapers, /health та /ping.
 
-13. [tests/](https://github.com/OlehZvenyhorodskiy/promosbot/tree/1d70dd2/tests)
+13. [tests/](https://github.com/OlehZvenyhorodskiy/promosbot/tree/main/tests)
     37 автоматичних юніт-тестів, що покривають дедуплікацію, мовні переклади, буклети, захисні утиліти та логіку скрапінгу.
 
 ---
@@ -72,25 +72,25 @@
 
 ```text
 Ти виступаєш у ролі Principal Python Architect та Lead Data Scraping Engineer. Проведи технічний аудит репозиторію бельгійського Telegram-бота для моніторингу знижок:
-https://github.com/OlehZvenyhorodskiy/promosbot (коміт 1d70dd2).
+https://github.com/OlehZvenyhorodskiy/promosbot (коміт main).
 
-Зверни увагу: перевіряй актуальний код саме за комітом 1d70dd2, де реалізовано всі захисні механізми та оновлені модулі:
-- Дерево репозиторію: https://github.com/OlehZvenyhorodskiy/promosbot/tree/1d70dd2
-- Головний рушій скрапінгу: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/engine.py
-- Базовий модуль та SSL certifi: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/base.py
+Зверни увагу: перевіряй актуальний код саме за комітом main, де реалізовано всі захисні механізми та оновлені модулі:
+- Дерево репозиторію: https://github.com/OlehZvenyhorodskiy/promosbot/tree/main
+- Головний рушій скрапінгу: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/engine.py
+- Базовий модуль та SSL certifi: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/base.py
 - Модулі супермаркетів:
-  * Lidl (Akamai 64KB headers, Brotli, certifi SSL, Lidl Plus): https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/lidl.py
-  * Colruyt (Search API, Xtra loyalty, Publitas fallback): https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/colruyt.py
-  * Carrefour (Client Hints sec-ch-ua, JSON-LD Product/ItemList, Bonus Card): https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/carrefour.py
-  * Kruidvat (Hybris API з пагінацією 300 товарів, certifi SSL, Club card): https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/kruidvat.py
-  * Action (HTML + Next.js + Publitas + Tiendeo): https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/scrapers/action.py
+  * Lidl (Akamai 64KB headers, Brotli, certifi SSL, Lidl Plus): https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/lidl.py
+  * Colruyt (Search API, Xtra loyalty, Publitas fallback): https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/colruyt.py
+  * Carrefour (Client Hints sec-ch-ua, JSON-LD Product/ItemList, Bonus Card): https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/carrefour.py
+  * Kruidvat (Hybris API з пагінацією 300 товарів, certifi SSL, Club card): https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/kruidvat.py
+  * Action (HTML + Next.js + Publitas + Tiendeo): https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/scrapers/action.py
 - Захисні утиліти:
-  * Token Bucket RateLimiter: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/utils/rate_limiter.py
-  * Exponential Backoff Retry: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/utils/retry.py
-  * CircuitBreaker: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/utils/circuit_breaker.py
+  * Token Bucket RateLimiter: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/utils/rate_limiter.py
+  * Exponential Backoff Retry: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/utils/retry.py
+  * CircuitBreaker: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/utils/circuit_breaker.py
 - Моніторинг та завершення процесів:
-  * Graceful shutdown SIGTERM/SIGINT: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/main.py
-  * Scraper health endpoint /api/v1/health/scrapers: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/1d70dd2/src/web/server.py
+  * Graceful shutdown SIGTERM/SIGINT: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/main.py
+  * Scraper health endpoint /api/v1/health/scrapers: https://raw.githubusercontent.com/OlehZvenyhorodskiy/promosbot/main/src/web/server.py
 
 Критерії оцінки:
 1. Захист від блокувань і лімітів (Rate Limiting та Concurrency):
