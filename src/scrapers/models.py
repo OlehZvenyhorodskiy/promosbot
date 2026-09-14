@@ -25,6 +25,7 @@ class PromoItem(BaseModel):
     page_number: Optional[int] = None
     coordinates: Optional[Dict[str, Any]] = None
     source_type: str = "web"
+    loyalty_card: Optional[str] = None
 
     def calculate_discount_percentage(self) -> Optional[float]:
         if self.original_price and self.promo_price and self.original_price > self.promo_price:

@@ -23,6 +23,11 @@ RETAILER_MAPPING = {
     "spar": "spar",
     "cora": "cora",
     "intermarche": "intermarche",
+    "action": "action",
+    "kruidvat": "kruidvat",
+    "okay": "okay",
+    "bioplanet": "bioplanet",
+    "bio-planet": "bioplanet",
 }
 
 class TiendeoAggregator:

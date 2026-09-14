@@ -3,6 +3,7 @@ import os
 import uuid
 from pathlib import Path
 from src.core.config import settings
+from src.core.constants import SUPERMARKETS
 from src.db.database import init_db
 from src.db.repository import Repository
 
@@ -18,10 +19,12 @@ async def test_user_and_filters():
         assert user["user_id"] == 12345
         assert user["language"] == "en"
 
-        # Check default store filters (all 10 enabled)
+        # Check default store filters (all stores enabled)
         stores = await Repository.get_user_store_filters(12345)
-        assert len(stores) == 10
+        assert len(stores) == len(SUPERMARKETS)
         assert "colruyt" in stores
+        assert "action" in stores
+        assert "kruidvat" in stores
 
         # Toggle store
         new_state = await Repository.toggle_user_store_filter(12345, "colruyt")
@@ -40,6 +43,7 @@ async def test_user_and_filters():
             "category_id": "dairy_cheese",
             "image_url": "https://example.com/gouda.jpg",
             "deal_url": "https://colruyt.be/deals/1",
+            "loyalty_card": "Xtra",
         }
         promo_id, is_new = await Repository.save_promo(promo_data)
         assert is_new is True
@@ -47,6 +51,7 @@ async def test_user_and_filters():
         promos = await Repository.get_promos(store_ids=["colruyt"])
         assert len(promos) == 1
         assert promos[0]["title"] == "Gouda Kaas 2+2"
+        assert promos[0]["loyalty_card"] == "Xtra"
 
         # Toggle favorite
         fav_state = await Repository.toggle_favorite(12345, promo_id)

@@ -9,7 +9,7 @@ SUPPORTED_LANGUAGES: Dict[str, Dict[str, str]] = {
 
 DEFAULT_LANGUAGE = "en"
 
-# Top 10 Belgian Supermarkets with official store URLs and digital folders
+# Major Belgian Supermarkets and Discount Chains with official URLs, digital folders, and loyalty programs
 SUPERMARKETS: Dict[str, Dict[str, Any]] = {
     "colruyt": {
         "id": "colruyt",
@@ -18,6 +18,7 @@ SUPERMARKETS: Dict[str, Dict[str, Any]] = {
         "url": "https://www.colruyt.be/nl/acties",
         "folder_url": "https://www.colruyt.be/nl/folders",
         "color": "#E30613",
+        "loyalty_card": "Xtra",
     },
     "carrefour": {
         "id": "carrefour",
@@ -26,6 +27,7 @@ SUPERMARKETS: Dict[str, Dict[str, Any]] = {
         "url": "https://www.carrefour.be/nl/promoties",
         "folder_url": "https://hyper.carrefour.be/nl/folders",
         "color": "#004E98",
+        "loyalty_card": "Bonus Card",
     },
     "delhaize": {
         "id": "delhaize",
@@ -34,6 +36,7 @@ SUPERMARKETS: Dict[str, Dict[str, Any]] = {
         "url": "https://www.delhaize.be/Promolandingpage",
         "folder_url": "https://www.delhaize.be/nl-be/folders",
         "color": "#C41230",
+        "loyalty_card": "SuperPlus",
     },
     "aldi": {
         "id": "aldi",
@@ -42,6 +45,7 @@ SUPERMARKETS: Dict[str, Dict[str, Any]] = {
         "url": "https://www.aldi.be/nl/aanbiedingen.html",
         "folder_url": "https://www.aldi.be/nl/folders.html",
         "color": "#00A8E1",
+        "loyalty_card": None,
     },
     "lidl": {
         "id": "lidl",
@@ -50,6 +54,7 @@ SUPERMARKETS: Dict[str, Dict[str, Any]] = {
         "url": "https://www.lidl.be/",
         "folder_url": "https://www.lidl.be/nl/folders",
         "color": "#0050AA",
+        "loyalty_card": "Lidl Plus",
     },
     "albert_heijn": {
         "id": "albert_heijn",
@@ -58,6 +63,7 @@ SUPERMARKETS: Dict[str, Dict[str, Any]] = {
         "url": "https://www.ah.be/bonus",
         "folder_url": "https://www.ah.be/bonus/folder",
         "color": "#00A0E2",
+        "loyalty_card": "Bonus",
     },
     "jumbo": {
         "id": "jumbo",
@@ -66,6 +72,7 @@ SUPERMARKETS: Dict[str, Dict[str, Any]] = {
         "url": "https://www.jumbo.com/nl-be/aanbiedingen",
         "folder_url": "https://www.jumbo.com/nl-be/folders",
         "color": "#FFC600",
+        "loyalty_card": "Jumbo Extra's",
     },
     "spar": {
         "id": "spar",
@@ -74,6 +81,7 @@ SUPERMARKETS: Dict[str, Dict[str, Any]] = {
         "url": "https://www.mijnspar.be/promoties",
         "folder_url": "https://www.mijnspar.be/promoties",
         "color": "#007A3D",
+        "loyalty_card": None,
     },
     "cora": {
         "id": "cora",
@@ -82,6 +90,7 @@ SUPERMARKETS: Dict[str, Dict[str, Any]] = {
         "url": "https://www.cora.be/fr/promotions",
         "folder_url": "https://www.cora.be/fr/catalogues",
         "color": "#7B1FA2",
+        "loyalty_card": "Carte cora",
     },
     "intermarche": {
         "id": "intermarche",
@@ -90,6 +99,43 @@ SUPERMARKETS: Dict[str, Dict[str, Any]] = {
         "url": "https://www.intermarche.be/produits/",
         "folder_url": "https://www.intermarche.be/nl/folders/",
         "color": "#E5001A",
+        "loyalty_card": "Carte de fidélité",
+    },
+    "action": {
+        "id": "action",
+        "name": "Action",
+        "emoji": "🟦",
+        "url": "https://www.action.com/nl-be/weekactie/",
+        "folder_url": "https://www.action.com/nl-be/weekactie/",
+        "color": "#001A9C",
+        "loyalty_card": "Action Club",
+    },
+    "kruidvat": {
+        "id": "kruidvat",
+        "name": "Kruidvat",
+        "emoji": "🔴",
+        "url": "https://www.kruidvat.be/nl/acties",
+        "folder_url": "https://www.kruidvat.be/nl/folders",
+        "color": "#E2001A",
+        "loyalty_card": "Kruidvat Club",
+    },
+    "okay": {
+        "id": "okay",
+        "name": "OKay",
+        "emoji": "🟢",
+        "url": "https://www.okay.be/nl/acties",
+        "folder_url": "https://www.okay.be/nl/folders",
+        "color": "#008837",
+        "loyalty_card": "Xtra",
+    },
+    "bioplanet": {
+        "id": "bioplanet",
+        "name": "Bio-Planet",
+        "emoji": "🌿",
+        "url": "https://www.bioplanet.be/nl/acties",
+        "folder_url": "https://www.bioplanet.be/nl/folders",
+        "color": "#4A7729",
+        "loyalty_card": "Xtra",
     },
 }
 
