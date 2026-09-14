@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from typing import List, Optional, Callable, Dict, Any
+import aiohttp
 from src.scrapers.models import PromoItem
 from src.scrapers.base import BaseScraper
 from src.scrapers.aldi import AldiScraper
@@ -18,12 +19,22 @@ from src.scrapers.newsletter import NewsletterParser
 from src.scrapers.seed_data import DEMO_PROMOS
 from src.db.repository import Repository
 from src.utils.circuit_breaker import CircuitBreaker, CircuitBreakerOpenException
+from src.utils.rate_limiter import PerDomainRateLimiter
+from src.utils.retry import async_retry
 from src.scrapers.leaflets.orchestrator import LeafletOrchestrator
 
 logger = logging.getLogger(__name__)
 
 class ScraperEngine:
-    def __init__(self, on_new_promo_callback: Optional[Callable[[Dict[str, Any]], Any]] = None):
+    def __init__(
+        self,
+        on_new_promo_callback: Optional[Callable[[Dict[str, Any]], Any]] = None,
+        max_concurrency: int = 3,
+        requests_per_second: float = 2.0,
+    ):
+        self.max_concurrency = max_concurrency
+        self.semaphore = asyncio.Semaphore(max_concurrency)
+        self.rate_limiter = PerDomainRateLimiter(default_rps=requests_per_second)
         self.scrapers: List[BaseScraper] = [
             AldiScraper(),
             ColruytScraper(),
@@ -77,11 +88,25 @@ class ScraperEngine:
         return total
 
     async def run_all_scrapers(self) -> int:
-        logger.info("Starting live supermarket scrapers run...")
-        tasks = [
-            self.circuit_breakers[s.store_id].call(s.fetch_promos)
-            for s in self.scrapers
-        ]
+        logger.info(f"Starting live supermarket scrapers run (concurrency={self.max_concurrency})...")
+
+        async def _run_guarded(scraper: BaseScraper):
+            async with self.semaphore:
+                await self.rate_limiter.acquire(scraper.store_id)
+                cb = self.circuit_breakers[scraper.store_id]
+
+                async def _call():
+                    return await cb.call(scraper.fetch_promos)
+
+                return await async_retry(
+                    _call,
+                    max_retries=2,
+                    initial_delay=1.0,
+                    backoff_factor=2.0,
+                    retryable_exceptions=(aiohttp.ClientError, asyncio.TimeoutError, ConnectionError, OSError),
+                )
+
+        tasks = [_run_guarded(s) for s in self.scrapers]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         new_count = 0
@@ -179,6 +204,8 @@ class ScraperEngine:
                 "name": s.name,
                 "circuit_breaker_state": cb.state if cb else "CLOSED",
                 "failure_count": cb.failure_count if cb else 0,
+                "concurrency_limit": self.max_concurrency,
+                "rate_limiter": "active",
             })
         return statuses
 
@@ -190,10 +217,27 @@ class ScraperEngine:
 
         cb = self.circuit_breakers.get(store_id)
         try:
-            if cb:
-                items = await cb.call(target_scraper.fetch_promos)
-            else:
-                items = await target_scraper.fetch_promos()
+            async with self.semaphore:
+                await self.rate_limiter.acquire(store_id)
+                if cb:
+                    async def _call():
+                        return await cb.call(target_scraper.fetch_promos)
+
+                    items = await async_retry(
+                        _call,
+                        max_retries=2,
+                        initial_delay=1.0,
+                        backoff_factor=2.0,
+                        retryable_exceptions=(aiohttp.ClientError, asyncio.TimeoutError, ConnectionError, OSError),
+                    )
+                else:
+                    items = await async_retry(
+                        target_scraper.fetch_promos,
+                        max_retries=2,
+                        initial_delay=1.0,
+                        backoff_factor=2.0,
+                        retryable_exceptions=(aiohttp.ClientError, asyncio.TimeoutError, ConnectionError, OSError),
+                    )
 
             if not items and store_id in self.browser_fallbacks:
                 fallback = self.browser_fallbacks[store_id]

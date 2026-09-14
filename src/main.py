@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import signal
 import sys
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand, MenuButtonDefault
@@ -79,8 +80,19 @@ async def main():
         asyncio.create_task(digest_loop(dispatcher)),
         asyncio.create_task(alert_batch_loop(dispatcher, settings.ALERT_BATCH_INTERVAL_MINUTES)),
     ]
-    if settings.KEEP_ALIVE_URL:
-        bg_tasks.append(asyncio.create_task(keep_alive_loop(settings.KEEP_ALIVE_URL)))
+    # Setup graceful shutdown signal handling for Unix / Cloud Run container lifecycle
+    loop = asyncio.get_running_loop()
+
+    def _on_shutdown_signal():
+        logger.info("Shutdown signal received. Stopping Telegram polling gracefully...")
+        asyncio.create_task(dp.stop_polling())
+
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        try:
+            loop.add_signal_handler(sig, _on_shutdown_signal)
+        except (NotImplementedError, AttributeError):
+            # Windows event loop does not support add_signal_handler
+            pass
 
     # Start live Telegram polling
     logger.info("Belgium Promo's Telegram Bot polling started.")

@@ -7,7 +7,7 @@ from urllib.parse import urljoin
 import aiohttp
 from bs4 import BeautifulSoup
 
-from src.scrapers.base import BaseScraper, infer_category
+from src.scrapers.base import BaseScraper, infer_category, get_ssl_context
 from src.scrapers.models import PromoItem
 from src.scrapers.generic import GenericRetailerScraper, retailer_price_from_text, parse_price
 
@@ -32,7 +32,7 @@ class DelhaizeScraper(BaseScraper):
             "Accept-Language": "nl-BE,nl;q=0.9,fr-BE;q=0.8,en;q=0.7",
         }
         try:
-            connector = aiohttp.TCPConnector(ssl=False)
+            connector = aiohttp.TCPConnector(ssl=get_ssl_context(verify=True))
             async with aiohttp.ClientSession(connector=connector, headers=headers) as session:
                 async with session.get(self.url, timeout=aiohttp.ClientTimeout(total=20)) as resp:
                     if resp.status >= 400:

@@ -58,3 +58,15 @@ def test_newsletter_parser():
     assert "2+2 GRATIS" in item.discount_text
     assert item.category_id == "dairy_cheese"
     assert item.promo_price == 4.50
+
+def test_scraper_engine_health_and_concurrency():
+    engine = ScraperEngine(max_concurrency=2, requests_per_second=5.0)
+    assert engine.max_concurrency == 2
+    assert engine.semaphore._value == 2
+    statuses = engine.get_health_status()
+    assert len(statuses) >= 10
+    for st in statuses:
+        assert st["circuit_breaker_state"] == "CLOSED"
+        assert st["concurrency_limit"] == 2
+        assert st["rate_limiter"] == "active"
+

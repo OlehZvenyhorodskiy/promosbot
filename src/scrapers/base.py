@@ -85,10 +85,31 @@ def generate_fingerprint(
     key = f"{store_id.lower().strip()}|{norm_title}|{price_str}|{vf_str}|{vu_str}"
     return hashlib.sha256(key.encode("utf-8")).hexdigest()[:24]
 
+import ssl
+import certifi
+from typing import Optional
+from src.utils.rate_limiter import PerDomainRateLimiter
+from src.utils.retry import async_retry
+
+default_rate_limiter = PerDomainRateLimiter(default_rps=2.0)
+
+def get_ssl_context(verify: bool = True) -> ssl.SSLContext:
+    """Returns a secure SSL context using certifi CA bundle, or unverified context if explicitly requested."""
+    if verify:
+        try:
+            return ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            return ssl.create_default_context()
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
 class BaseScraper(ABC):
-    def __init__(self, store_id: str, name: str):
+    def __init__(self, store_id: str, name: str, rate_limiter: Optional[PerDomainRateLimiter] = None):
         self.store_id = store_id
         self.name = name
+        self.rate_limiter = rate_limiter or default_rate_limiter
 
     @staticmethod
     def stable_external_id(store_id: str, title: str, source_key: str = "") -> str:
@@ -101,3 +122,4 @@ class BaseScraper(ABC):
     @abstractmethod
     async def fetch_promos(self) -> List[PromoItem]:
         pass
+

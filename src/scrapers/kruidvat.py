@@ -8,7 +8,7 @@ from urllib.parse import urljoin
 import aiohttp
 from bs4 import BeautifulSoup
 
-from src.scrapers.base import BaseScraper, infer_category, generate_fingerprint
+from src.scrapers.base import BaseScraper, infer_category, generate_fingerprint, get_ssl_context
 from src.scrapers.models import PromoItem
 from src.scrapers.generic import parse_price, prices_from_text
 
@@ -91,7 +91,7 @@ class KruidvatScraper(BaseScraper):
             "fields": "FULL",
         }
         items = []
-        connector = aiohttp.TCPConnector(ssl=False)
+        connector = aiohttp.TCPConnector(ssl=get_ssl_context(verify=True))
         async with aiohttp.ClientSession(connector=connector, headers=headers) as session:
             for page in range(3):
                 params["currentPage"] = str(page)
@@ -201,7 +201,7 @@ class KruidvatScraper(BaseScraper):
             ),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
-        connector = aiohttp.TCPConnector(ssl=False)
+        connector = aiohttp.TCPConnector(ssl=get_ssl_context(verify=True))
         items = []
         async with aiohttp.ClientSession(connector=connector, headers=headers) as session:
             async with session.get(self.web_url, timeout=aiohttp.ClientTimeout(total=20)) as resp:

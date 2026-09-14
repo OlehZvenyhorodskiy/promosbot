@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 import aiohttp
 from bs4 import BeautifulSoup
 
-from src.scrapers.base import BaseScraper, infer_category, generate_fingerprint
+from src.scrapers.base import BaseScraper, infer_category, generate_fingerprint, get_ssl_context
 from src.scrapers.models import PromoItem
 from src.scrapers.generic import GenericRetailerScraper, parse_price, prices_from_text
 
@@ -38,7 +38,7 @@ class LidlScraper(BaseScraper):
             "Upgrade-Insecure-Requests": "1",
         }
         try:
-            connector = aiohttp.TCPConnector(ssl=False, limit=10, limit_per_host=5)
+            connector = aiohttp.TCPConnector(ssl=get_ssl_context(verify=True), limit=10, limit_per_host=5)
             async with aiohttp.ClientSession(
                 connector=connector,
                 headers=headers,

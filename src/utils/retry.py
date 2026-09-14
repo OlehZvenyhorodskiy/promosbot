@@ -7,11 +7,11 @@ logger = logging.getLogger(__name__)
 
 async def async_retry(
     func: Callable,
+    *args,
     max_retries: int = 3,
     initial_delay: float = 1.0,
     backoff_factor: float = 2.0,
     retryable_exceptions: Tuple[Type[Exception], ...] = (Exception,),
-    *args,
     **kwargs,
 ) -> Any:
     """
