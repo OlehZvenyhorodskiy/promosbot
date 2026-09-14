@@ -5,6 +5,7 @@ import aiohttp
 from src.scrapers.models import PromoItem
 from src.scrapers.base import BaseScraper
 from src.scrapers.aldi import AldiScraper
+from src.scrapers.bioplanet import BioplanetScraper
 from src.scrapers.colruyt import ColruytScraper
 from src.scrapers.carrefour import CarrefourScraper
 from src.scrapers.delhaize import DelhaizeScraper
@@ -44,7 +45,7 @@ class ScraperEngine:
             ActionScraper(),
             KruidvatScraper(),
             OkayScraper(),
-            GenericRetailerScraper("bioplanet", "Bio-Planet", SUPERMARKETS["bioplanet"]["url"]),
+            BioplanetScraper(),
             GenericRetailerScraper("albert_heijn", "Albert Heijn", SUPERMARKETS["albert_heijn"]["url"]),
             GenericRetailerScraper("jumbo", "Jumbo", SUPERMARKETS["jumbo"]["url"]),
             GenericRetailerScraper("spar", "Spar", SUPERMARKETS["spar"]["url"]),
