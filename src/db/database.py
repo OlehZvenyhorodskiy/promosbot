@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS promos (
 
 CREATE INDEX IF NOT EXISTS idx_promos_store ON promos(store_id);
 CREATE INDEX IF NOT EXISTS idx_promos_category ON promos(category_id);
+CREATE INDEX IF NOT EXISTS idx_promos_store_category ON promos(store_id, category_id);
 CREATE INDEX IF NOT EXISTS idx_promos_valid ON promos(valid_until);
 
 CREATE TABLE IF NOT EXISTS user_favorites (
@@ -144,6 +145,9 @@ async def init_db():
         )
         await conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_promos_source ON promos(source_type)"
+        )
+        await conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_promos_store_category ON promos(store_id, category_id)"
         )
 
         await conn.commit()
