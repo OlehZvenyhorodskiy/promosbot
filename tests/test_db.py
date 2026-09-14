@@ -54,6 +54,26 @@ async def test_user_and_filters():
         favs = await Repository.get_user_favorites(12345)
         assert len(favs) == 1
         assert favs[0]["id"] == promo_id
+
+        # Saving identical promo again should NOT be marked as new (fingerprint deduplication)
+        promo_id_again, is_new_again = await Repository.save_promo(promo_data)
+        assert promo_id_again == promo_id
+        assert is_new_again is False
+
+        # Bulk save deduplication
+        bulk_data = [
+            promo_data, # existing
+            {
+                "store_id": "aldi",
+                "title": "Verse Melk 1L",
+                "promo_price": 0.89,
+                "category_id": "dairy_cheese",
+            }, # new
+        ]
+        results = await Repository.save_promos_bulk(bulk_data)
+        assert len(results) == 2
+        assert results[0][1] is False # existing
+        assert results[1][1] is True # new
     finally:
         try:
             if os.path.exists(test_db):
